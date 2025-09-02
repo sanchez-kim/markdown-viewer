@@ -60,6 +60,7 @@ function hello() {
 	let isScrolling = false;
 	let showExportDropdown = false;
 	let isDragOverImage = false;
+	let foldedImages = new Set<string>(); // 접힌 이미지들의 ID 저장
 
 	// Configure marked with highlight.js
 	marked.setOptions({
@@ -77,6 +78,30 @@ function hello() {
 	function updatePreview() {
 		const result = marked(markdownText);
 		renderedHtml = typeof result === 'string' ? result : result.toString();
+	}
+
+	// ===== INLINE IMAGE FOLDING =====
+	let displayText = '';
+	let imageMap = new Map(); // 원본 이미지 저장
+	
+	$: processMarkdownDisplay(markdownText);
+	
+	function processMarkdownDisplay(text: string) {
+		imageMap.clear();
+		const base64Pattern = /!\[([^\]]*)\]\((data:image\/[^;]+;base64,)([A-Za-z0-9+/]+=*)\)/g;
+		
+		displayText = text.replace(base64Pattern, (match, altText, prefix, base64) => {
+			// Base64 문자열이 200자 이상이면 자동으로 접기
+			if (base64.length > 200) {
+				const imageId = `img-${imageMap.size}`;
+				imageMap.set(imageId, match); // 원본 저장
+				
+				const size = Math.round(base64.length / 1024);
+				const preview = base64.substring(0, 30) + '...' + base64.substring(base64.length - 10);
+				return `![${altText}](${prefix}${preview}) 📷[${size}KB]`;
+			}
+			return match;
+		});
 	}
 
 	// ===== LOCAL STORAGE & AUTO-SAVE =====
@@ -713,9 +738,33 @@ function hello() {
 			class="editor-section" 
 			style="width: {editorWidth}%"
 		>
-			<h2>에디터</h2>
+			<h2>
+				에디터
+				{#if markdownText.includes('data:image')}
+					<span class="image-indicator">📷 긴 Base64 이미지 자동 축약</span>
+				{/if}
+			</h2>
 			<textarea 
-				bind:value={markdownText}
+				value={displayText}
+				on:input={(e) => {
+					const newValue = e.currentTarget.value;
+					const base64ShortPattern = /!\[([^\]]*)\]\((data:image\/[^;]+;base64,)[^)]+\.\.\.[^)]+\) 📷\[\d+KB\]/g;
+					
+					// 축약된 이미지 패턴이 있는지 확인
+					let hasShortImages = false;
+					let restoreCount = 0;
+					
+					const restoredText = newValue.replace(base64ShortPattern, (match) => {
+						hasShortImages = true;
+						// imageMap에서 원본 찾기
+						const original = imageMap.get(`img-${restoreCount}`);
+						restoreCount++;
+						return original || match;
+					});
+					
+					// 축약된 이미지가 있었으면 복원된 텍스트 사용, 없으면 그대로 사용
+					markdownText = hasShortImages ? restoredText : newValue;
+				}}
 				placeholder="마크다운을 입력하세요..."
 				class="editor"
 				class:drag-over={isDragOverImage}
@@ -895,6 +944,14 @@ function hello() {
 
 	.sync-button:not(.active):hover {
 		background: rgba(231, 76, 60, 0.9) !important;
+	}
+
+	.image-indicator {
+		font-size: 0.75rem;
+		color: #7f8c8d;
+		margin-left: 1rem;
+		font-weight: normal;
+		opacity: 0.8;
 	}
 
 	.export-dropdown {
