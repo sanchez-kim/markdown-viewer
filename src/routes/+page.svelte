@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { onMount } from 'svelte';
+	import { onMount, onDestroy } from 'svelte';
 	import { marked } from 'marked';
 	import hljs from 'highlight.js';
 	import { browser } from '$app/environment';
@@ -26,7 +26,7 @@
 
 ### 3️⃣ 코드 입력
 \`\`\`javascript
-// 코드 블록은 이렇게!
+// Code blocks work like this!
 function hello() {
     console.log("안녕하세요!");
 }
@@ -60,11 +60,12 @@ function hello() {
 	let isScrolling = false;
 	let showExportDropdown = false;
 	let isDragOverImage = false;
-	let foldedImages = new Set<string>(); // 접힌 이미지들의 ID 저장
+	let foldedImages = new Set<string>(); // Folded image IDs
+	let imageIdCounter = 0; // Unique ID counter for images
 
-	// Configure marked with highlight.js
+	// Configure marked with highlight.js - with proper typing
 	marked.setOptions({
-		highlight: function(code: string, lang: string) {
+		highlight: function(code: string, lang: string): string {
 			if (lang && hljs.getLanguage(lang)) {
 				return hljs.highlight(code, { language: lang }).value;
 			}
@@ -72,7 +73,7 @@ function hello() {
 		},
 		breaks: true,
 		gfm: true
-	} as any);
+	});
 
 	// ===== MARKDOWN RENDERING =====
 	function updatePreview() {
@@ -82,19 +83,26 @@ function hello() {
 
 	// ===== INLINE IMAGE FOLDING =====
 	let displayText = '';
-	let imageMap = new Map(); // 원본 이미지 저장
+	let imageMap = new Map<string, string>(); // Store original images with proper typing
+	let debounceTimer: ReturnType<typeof setTimeout> | null = null;
 	
-	$: processMarkdownDisplay(markdownText);
+	// Debounced processing to improve performance
+	$: {
+		if (debounceTimer) clearTimeout(debounceTimer);
+		debounceTimer = setTimeout(() => processMarkdownDisplay(markdownText), 100);
+	}
 	
 	function processMarkdownDisplay(text: string) {
+		// Clear previous data to prevent memory leaks
 		imageMap.clear();
+		imageIdCounter = 0; // Reset counter for each processing
 		const base64Pattern = /!\[([^\]]*)\]\((data:image\/[^;]+;base64,)([A-Za-z0-9+/]+=*)\)/g;
 		
 		displayText = text.replace(base64Pattern, (match, altText, prefix, base64) => {
-			// Base64 문자열이 200자 이상이면 자동으로 접기
+			// Auto-fold Base64 strings longer than 200 characters
 			if (base64.length > 200) {
-				const imageId = `img-${imageMap.size}`;
-				imageMap.set(imageId, match); // 원본 저장
+				const imageId = `img-${imageIdCounter++}`; // Use counter for unique ID
+				imageMap.set(imageId, match); // Store original image
 				
 				const size = Math.round(base64.length / 1024);
 				const preview = base64.substring(0, 30) + '...' + base64.substring(base64.length - 10);
@@ -114,7 +122,7 @@ function hello() {
 			localStorage.setItem('markdown-viewer-timestamp', new Date().toISOString());
 			lastSaved = new Date().toLocaleTimeString();
 			saveStatus = 'saved';
-			previousText = markdownText; // 저장 후 이전 텍스트 업데이트
+			previousText = markdownText; // Update previous text after saving
 			console.log('로컬스토리지 저장 완료:', markdownText.substring(0, 50) + '...');
 		} catch (error) {
 			console.error('저장 실패:', error);
@@ -136,12 +144,12 @@ function hello() {
 				if (confirm(`저장된 초안이 있습니다 (${new Date(savedTimestamp || '').toLocaleString()}). 불러오시겠습니까?`)) {
 					markdownText = savedContent;
 					currentFileName = savedFilename || 'untitled.md';
-					previousText = savedContent; // 로드 후 이전 텍스트 업데이트
+					previousText = savedContent; // Update previous text after loading
 					updatePreview();
-					saveStatus = 'saved'; // 로드된 내용은 저장된 상태
+					saveStatus = 'saved'; // Loaded content is in saved state
 				}
 			} else if (savedContent) {
-				// 현재 텍스트와 동일한 경우에도 저장된 상태로 설정
+				// Set to saved state even when current text matches saved content
 				saveStatus = 'saved';
 				previousText = markdownText;
 			}
@@ -160,7 +168,7 @@ function hello() {
 				console.log('자동 저장 실행 중...');
 				saveToLocal();
 			}
-		}, 5 * 60 * 1000); // 5분마다 자동 저장
+		}, 5 * 60 * 1000); // Auto-save every 5 minutes
 	}
 
 	function stopAutoSave() {
@@ -176,6 +184,30 @@ function hello() {
 	}
 
 	// ===== FILE I/O OPERATIONS =====
+	
+	// Type definitions for File System Access API
+	interface FilePickerOptions {
+		types?: Array<{
+			description: string;
+			accept: Record<string, string[]>;
+		}>;
+	}
+	
+	interface FileSystemFileHandle {
+		getFile(): Promise<File>;
+		createWritable(): Promise<FileSystemWritableFileStream>;
+	}
+	
+	interface FileSystemWritableFileStream {
+		write(data: string): Promise<void>;
+		close(): Promise<void>;
+	}
+	
+	interface WindowWithFileSystem extends Window {
+		showOpenFilePicker(options: FilePickerOptions): Promise<FileSystemFileHandle[]>;
+		showSaveFilePicker(options: FilePickerOptions & { suggestedName?: string }): Promise<FileSystemFileHandle>;
+	}
+	
 	function handleFileUpload(event: Event) {
 		const input = event.target as HTMLInputElement;
 		const file = input.files?.[0];
@@ -185,7 +217,7 @@ function hello() {
 				markdownText = e.target?.result as string;
 				currentFileName = file.name;
 				updatePreview();
-				saveToLocal(); // 파일 로드 후 자동 저장
+				saveToLocal(); // Auto-save after file load
 			};
 			reader.readAsText(file);
 		}
@@ -194,9 +226,9 @@ function hello() {
 	// Local file system access (experimental)
 	async function openLocalFile() {
 		try {
-			// File System Access API
+			// File System Access API with proper typing
 			if ('showOpenFilePicker' in window) {
-				const [fileHandle] = await (window as any).showOpenFilePicker({
+				const [fileHandle] = await (window as WindowWithFileSystem).showOpenFilePicker({
 					types: [{
 						description: 'Markdown files',
 						accept: {
@@ -225,9 +257,9 @@ function hello() {
 	// Save file to local system
 	async function saveFileToLocal() {
 		try {
-			// File System Access API
+			// File System Access API with proper typing
 			if ('showSaveFilePicker' in window) {
-				const fileHandle = await (window as any).showSaveFilePicker({
+				const fileHandle = await (window as WindowWithFileSystem).showSaveFilePicker({
 					suggestedName: currentFileName,
 					types: [{
 						description: 'Markdown files',
@@ -272,12 +304,12 @@ function hello() {
 
 	function finishEditingFilename() {
 		if (tempFileName.trim()) {
-			// .md 확장자가 없으면 추가
+			// Add .md extension if not present
 			const newFileName = tempFileName.trim().endsWith('.md') 
 				? tempFileName.trim() 
 				: tempFileName.trim() + '.md';
 			currentFileName = newFileName;
-			saveToLocal(); // 파일명 변경 후 저장
+			saveToLocal(); // Save after filename change
 		}
 		isEditingFilename = false;
 		tempFileName = '';
@@ -372,7 +404,7 @@ function hello() {
 		
 		markdownText = before + imageMarkdown + after;
 		
-		// 커서 위치를 이미지 마크다운 뒤로 이동
+		// Move cursor to after the image markdown
 		setTimeout(() => {
 			textarea.focus();
 			const newPosition = start + imageMarkdown.length;
@@ -387,13 +419,13 @@ function hello() {
 				return;
 			}
 
-			if (file.size > 5 * 1024 * 1024) { // 5MB 제한
+			if (file.size > 5 * 1024 * 1024) { // 5MB limit
 				alert('이미지 크기는 5MB 이하로 제한됩니다.');
 				return;
 			}
 
 			const base64 = await convertImageToBase64(file);
-			const fileName = file.name.replace(/\s+/g, '_'); // 공백을 언더스코어로 변경
+			const fileName = file.name.replace(/\s+/g, '_'); // Replace spaces with underscores
 			const imageMarkdown = `\n![${fileName}](${base64})\n`;
 			
 			insertImageAtCursor(imageMarkdown);
@@ -476,7 +508,7 @@ function hello() {
 			}
 			
 			// Create complete HTML document with exact preview styles
-			// PDF 제목을 .md 확장자 제거하고 더 깔끔하게 만들기
+			// Create cleaner PDF title by removing .md extension
 			const pdfTitle = currentFileName.replace(/\.md$/, '').replace(/^untitled$/, '마크다운 문서');
 			const htmlContent = '<!DOCTYPE html>' +
 				'<html>' +
@@ -484,45 +516,45 @@ function hello() {
 				'<title>' + pdfTitle + '</title>' +
 				'<meta charset="utf-8">' +
 				'<style>' +
-				// 기본 설정
+				// Basic settings
 				'* { box-sizing: border-box; }' +
 				'body { margin: 20px; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; line-height: 1.6; background: white; color: #000; }' +
 				
-				// 미리보기와 동일한 제목 스타일
+				// Title styles matching preview
 				'h1, h2, h3, h4, h5, h6 { color: #2c3e50; margin-top: 1.5em; margin-bottom: 0.5em; }' +
 				'h1 { border-bottom: 2px solid #3498db; padding-bottom: 0.3em; }' +
 				'h2 { border-bottom: 1px solid #bdc3c7; padding-bottom: 0.3em; }' +
 				
-				// 인용구 스타일 (미리보기와 동일)
+				// Blockquote styles (matching preview)
 				'blockquote { border-left: 4px solid #3498db; padding-left: 1rem; margin: 1rem 0; color: #7f8c8d; background: #f8f9fa; padding: 0.5rem 1rem; }' +
 				
-				// 코드 스타일 (미리보기와 동일)
+				// Code styles (matching preview)
 				'code { background: #f1f2f6; padding: 0.2em 0.4em; border-radius: 3px; font-family: "Monaco", "Menlo", monospace; font-size: 0.9em; }' +
 				'pre { background: #2c3e50; color: #ecf0f1; padding: 1rem; border-radius: 4px; overflow-x: auto; margin: 1rem 0; }' +
 				'pre code { background: none; padding: 0; color: inherit; }' +
 				
-				// 테이블 스타일 (미리보기와 동일)
+				// Table styles (matching preview)
 				'table { border-collapse: collapse; width: 100%; margin: 1rem 0; }' +
 				'th, td { border: 1px solid #ddd; padding: 0.5rem; text-align: left; }' +
 				'th { background-color: #f8f9fa !important; font-weight: 600; }' +
 				'td[colspan] { text-align: center; font-weight: bold; background-color: #f8f9fa !important; }' +
 				'td[style*="background-color"] { -webkit-print-color-adjust: exact !important; }' +
 				
-				// 링크 스타일 (미리보기와 동일)
+				// Link styles (matching preview)
 				'a { color: #3498db; text-decoration: none; }' +
 				'a:hover { text-decoration: underline; }' +
 				
-				// 리스트 스타일 (미리보기와 동일)
+				// List styles (matching preview)
 				'ul, ol { padding-left: 1.5rem; }' +
 				'li { margin: 0.25rem 0; }' +
 				
-				// 이미지 및 Figure 스타일
+				// Image and Figure styles
 				'img { max-width: 100%; height: auto; display: block; }' +
 				'figure { margin: 1rem 0; text-align: center; }' +
 				'figcaption { font-size: 0.9em; color: #666; margin-top: 0.5rem; font-style: italic; }' +
 				'div[align="center"] { text-align: center; margin: 1rem 0; }' +
 				
-				// 인쇄 특화 스타일
+				// Print-specific styles
 				'@media print {' +
 				'@page { margin: 20mm; size: A4; }' +
 				'body { margin: 0; padding: 0; -webkit-print-color-adjust: exact; }' +
@@ -595,8 +627,8 @@ function hello() {
 
 	onMount(() => {
 		updatePreview();
-		loadFromLocal(); // 페이지 로드 시 저장된 내용 확인
-		startAutoSave(); // 5분 간격 자동 저장 시작
+		loadFromLocal(); // Check saved content on page load
+		startAutoSave(); // Start auto-save with 5-minute interval
 		
 		// Add global event listeners for mouse events
 		document.addEventListener('mousemove', handleMouseMove);
@@ -630,21 +662,31 @@ function hello() {
 			document.removeEventListener('mouseup', handleMouseUp);
 			document.removeEventListener('keydown', handleKeydown);
 			document.removeEventListener('click', handleClickOutside);
-			stopAutoSave(); // 컴포넌트 언마운트 시 자동 저장 정리
+			stopAutoSave(); // Cleanup auto-save on component unmount
 		};
 	});
 
-	// 이전 텍스트를 추적하여 실제 변경시에만 unsaved 상태로 변경
+	// Track previous text to only change to unsaved state on actual changes
 	let previousText = markdownText;
 	
 	$: if (markdownText !== undefined) {
 		updatePreview();
-		// 실제로 텍스트가 변경되었고, 현재 저장된 상태일 때만 unsaved로 변경
+		// Only change to unsaved if text actually changed and currently saved
 		if (markdownText !== previousText && saveStatus === 'saved') {
 			saveStatus = 'unsaved';
 			previousText = markdownText;
 		}
 	}
+	
+	// Cleanup function to prevent memory leaks
+	onDestroy(() => {
+		// Clear imageMap on component destruction
+		imageMap.clear();
+		// Clear debounce timer
+		if (debounceTimer) clearTimeout(debounceTimer);
+		// Stop any running intervals
+		stopAutoSave();
+	});
 </script>
 
 <svelte:head>
@@ -750,19 +792,27 @@ function hello() {
 					const newValue = e.currentTarget.value;
 					const base64ShortPattern = /!\[([^\]]*)\]\((data:image\/[^;]+;base64,)[^)]+\.\.\.[^)]+\) 📷\[\d+KB\]/g;
 					
-					// 축약된 이미지 패턴이 있는지 확인
+					// Check if there are compressed image patterns
 					let hasShortImages = false;
 					let restoreCount = 0;
 					
 					const restoredText = newValue.replace(base64ShortPattern, (match) => {
 						hasShortImages = true;
-						// imageMap에서 원본 찾기
-						const original = imageMap.get(`img-${restoreCount}`);
+						// Find original image in imageMap with proper error handling
+						const imageId = `img-${restoreCount}`;
+						const original = imageMap.get(imageId);
 						restoreCount++;
-						return original || match;
+						
+						if (!original) {
+							console.warn(`Failed to restore original image for ID: ${imageId}`);
+							// Return match as fallback, but this should not happen in normal usage
+							return match;
+						}
+						
+						return original;
 					});
 					
-					// 축약된 이미지가 있었으면 복원된 텍스트 사용, 없으면 그대로 사용
+					// Use restored text if compressed images were found, otherwise use as-is
 					markdownText = hasShortImages ? restoredText : newValue;
 				}}
 				placeholder="마크다운을 입력하세요..."
