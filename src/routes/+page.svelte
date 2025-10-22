@@ -556,15 +556,22 @@ function hello() {
 				
 				// Print-specific styles
 				'@media print {' +
-				'@page { margin: 20mm; size: A4; }' +
-				'body { margin: 0; padding: 0; -webkit-print-color-adjust: exact; }' +
-				'table { page-break-inside: avoid; }' +
-				'tr { page-break-inside: avoid; }' +
-				'img { page-break-inside: avoid; }' +
-				'figure { page-break-inside: avoid; }' +
-				'h1, h2, h3, h4, h5, h6 { page-break-after: avoid; }' +
-				'blockquote { page-break-inside: avoid; }' +
-				'pre { page-break-inside: avoid; }' +
+				'@page { margin: 10mm; size: A4; }' +
+				'body { margin: 0; padding: 0; -webkit-print-color-adjust: exact; orphans: 3; widows: 3; line-height: 1.4; }' +
+				'h1, h2, h3, h4, h5, h6 { margin-top: 0.8em; margin-bottom: 0.3em; page-break-after: avoid; page-break-inside: avoid; orphans: 3; widows: 3; }' +
+				'h1 { padding-bottom: 0.2em; }' +
+				'h2 { padding-bottom: 0.2em; }' +
+				'p { margin: 0.4em 0; orphans: 3; widows: 3; }' +
+				'blockquote { margin: 0.6em 0; padding: 0.3em 0.8em; page-break-inside: avoid; }' +
+				'pre { margin: 0.6em 0; padding: 0.6em; page-break-inside: avoid; }' +
+				'code { padding: 0.1em 0.3em; }' +
+				'table { margin: 0.6em 0; page-break-inside: avoid; }' +
+				'tr { page-break-inside: avoid; page-break-after: auto; }' +
+				'th, td { padding: 0.3em; }' +
+				'ul, ol { margin: 0.4em 0; padding-left: 1.2em; page-break-before: avoid; }' +
+				'li { margin: 0.1em 0; page-break-inside: avoid; }' +
+				'img { page-break-inside: avoid; max-height: 85vh; }' +
+				'figure { margin: 0.6em 0; page-break-inside: avoid; }' +
 				'.print-buttons { display: none !important; }' +
 				'}' +
 				'</style>' +
