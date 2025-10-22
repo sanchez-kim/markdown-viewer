@@ -4,6 +4,24 @@
 	import hljs from 'highlight.js';
 	import { browser } from '$app/environment';
 
+	// Electron API detection
+	interface ElectronAPI {
+		onFileOpened: (callback: (data: {content: string, fileName: string}) => void) => void;
+		onSaveFile: (callback: () => void) => void;
+		onExportPDF: (callback: () => void) => void;
+		platform: string;
+		isElectron: boolean;
+		removeAllListeners: (channel: string) => void;
+	}
+	
+	declare global {
+		interface Window {
+			electronAPI?: ElectronAPI;
+		}
+	}
+
+	const isElectron = typeof window !== 'undefined' && window.electronAPI?.isElectron;
+
 	let markdownText = `# 🎉 마크다운 뷰어에 오신 것을 환영합니다!
 
 이곳에서 **마크다운 문서**를 쉽고 편리하게 작성해보세요. 왼쪽에 글을 쓰면 오른쪽에서 바로 결과를 확인할 수 있어요!
@@ -11,7 +29,7 @@
 ## ✏️ 사용 방법
 
 ### 1️⃣ 기본 글쓰기
-- **굵게** 하려면 \`**텍스트**\` 
+- **굵게** 하려면 \`**텍스트**\`
 - *기울임* 글씨는 \`*텍스트*\`
 - [링크는 이렇게](https://github.com)
 
@@ -36,12 +54,19 @@ function hello() {
 > 인용하고 싶은 글이나 중요한 내용은
 > 이렇게 표시할 수 있어요.
 
+### 5️⃣ 페이지 나누기 (PDF 출력용)
+PDF로 출력할 때 페이지를 나누려면 다음 중 하나를 사용하세요:
+- \`--- pagebreak ---\`
+- \`\\newpage\`
+- \`<pb>\`
+
 ## 💡 이런 것들을 해보세요!
 
 - 🔄 **스크롤 연동**: 위쪽 버튼으로 에디터와 미리보기 스크롤을 함께 움직일 수 있어요
 - 💾 **자동 저장**: 5분마다 자동으로 저장되니까 걱정 마세요
 - 📁 **파일명 변경**: 위쪽의 파일명을 클릭하면 이름을 바꿀 수 있어요
-- 🖼️ **이미지 추가**: 드래그해서 이미지를 넣을 수 있어요 (곧 추가 예정!)
+- 🖼️ **이미지 추가**: 드래그해서 이미지를 넣을 수 있어요
+- 📄 **PDF 출력**: 페이지 나누기를 지원하며 코드도 잘리지 않습니다
 
 지금 바로 이 글을 지우고 새로운 문서를 만들어보세요! 🚀`;
 
@@ -77,34 +102,50 @@ function hello() {
 
 	// ===== MARKDOWN RENDERING =====
 	function updatePreview() {
-		const result = marked(markdownText);
+		// Process markdown with page break support
+		let processedMarkdown = markdownText;
+
+		// Replace page break markers with HTML
+		processedMarkdown = processedMarkdown.replace(/^---\s*pagebreak\s*---$/gm, '<div class="page-break"></div>');
+		processedMarkdown = processedMarkdown.replace(/^\\newpage$/gm, '<div class="page-break"></div>');
+		processedMarkdown = processedMarkdown.replace(/^<pb>$/gm, '<div class="page-break"></div>');
+
+		const result = marked(processedMarkdown);
 		renderedHtml = typeof result === 'string' ? result : result.toString();
 	}
 
-	// ===== INLINE IMAGE FOLDING =====
+	// ===== INLINE IMAGE HANDLING =====
 	let displayText = '';
-	let imageMap = new Map<string, string>(); // Store original images with proper typing
+	let imageMap = new Map<string, { markdown: string, dataUrl: string, altText: string, size: number }>(); // Enhanced image storage
 	let debounceTimer: ReturnType<typeof setTimeout> | null = null;
-	
+
 	// Debounced processing to improve performance
 	$: {
 		if (debounceTimer) clearTimeout(debounceTimer);
 		debounceTimer = setTimeout(() => processMarkdownDisplay(markdownText), 100);
 	}
-	
+
 	function processMarkdownDisplay(text: string) {
 		// Clear previous data to prevent memory leaks
 		imageMap.clear();
 		imageIdCounter = 0; // Reset counter for each processing
 		const base64Pattern = /!\[([^\]]*)\]\((data:image\/[^;]+;base64,)([A-Za-z0-9+/]+=*)\)/g;
-		
+
 		displayText = text.replace(base64Pattern, (match, altText, prefix, base64) => {
-			// Auto-fold Base64 strings longer than 200 characters
+			// Store image data for folding
 			if (base64.length > 200) {
 				const imageId = `img-${imageIdCounter++}`; // Use counter for unique ID
-				imageMap.set(imageId, match); // Store original image
-				
+				const fullDataUrl = `${prefix}${base64}`;
 				const size = Math.round(base64.length / 1024);
+
+				imageMap.set(imageId, {
+					markdown: match,
+					dataUrl: fullDataUrl,
+					altText: altText || 'image',
+					size: size
+				});
+
+				// Return shortened version for display in textarea
 				const preview = base64.substring(0, 30) + '...' + base64.substring(base64.length - 10);
 				return `![${altText}](${prefix}${preview}) 📷[${size}KB]`;
 			}
@@ -412,6 +453,48 @@ function hello() {
 		}, 50);
 	}
 
+	// Function to resize image
+	async function resizeImage(file: File, maxWidth: number = 400): Promise<string> {
+		return new Promise((resolve, reject) => {
+			const reader = new FileReader();
+			reader.onload = (e) => {
+				const img = new Image();
+				img.onload = () => {
+					const canvas = document.createElement('canvas');
+					let width = img.width;
+					let height = img.height;
+
+					// Calculate new dimensions if image is larger than maxWidth
+					if (width > maxWidth) {
+						height = (maxWidth / width) * height;
+						width = maxWidth;
+					}
+
+					canvas.width = width;
+					canvas.height = height;
+
+					const ctx = canvas.getContext('2d');
+					if (!ctx) {
+						reject(new Error('Canvas context not available'));
+						return;
+					}
+
+					// Draw resized image
+					ctx.drawImage(img, 0, 0, width, height);
+
+					// Convert to base64 with quality compression for JPEG
+					const quality = file.type === 'image/jpeg' ? 0.8 : 1.0;
+					const dataUrl = canvas.toDataURL(file.type, quality);
+					resolve(dataUrl);
+				};
+				img.onerror = reject;
+				img.src = e.target?.result as string;
+			};
+			reader.onerror = reject;
+			reader.readAsDataURL(file);
+		});
+	}
+
 	async function handleImageUpload(file: File) {
 		try {
 			if (!file.type.startsWith('image/')) {
@@ -424,10 +507,11 @@ function hello() {
 				return;
 			}
 
-			const base64 = await convertImageToBase64(file);
+			// Resize image if needed (max width: 400px)
+			const base64 = await resizeImage(file, 400);
 			const fileName = file.name.replace(/\s+/g, '_'); // Replace spaces with underscores
 			const imageMarkdown = `\n![${fileName}](${base64})\n`;
-			
+
 			insertImageAtCursor(imageMarkdown);
 		} catch (error) {
 			console.error('이미지 업로드 실패:', error);
@@ -487,6 +571,27 @@ function hello() {
 			}
 		};
 		input.click();
+	}
+
+	// Function to toggle image folding
+	function toggleImageFold(imageId: string) {
+		if (foldedImages.has(imageId)) {
+			foldedImages.delete(imageId);
+		} else {
+			foldedImages.add(imageId);
+		}
+		foldedImages = foldedImages; // Trigger reactivity
+	}
+
+	// Function to update image preview size
+	function updateImagePreviewSize(imageId: string, size: string) {
+		const container = document.querySelector(`[data-image-id="${imageId}"]`);
+		if (container) {
+			const img = container.querySelector('.thumbnail-image') as HTMLImageElement;
+			if (img) {
+				img.style.maxWidth = size + 'px';
+			}
+		}
 	}
 
 	async function downloadPDF() {
@@ -554,17 +659,105 @@ function hello() {
 				'figcaption { font-size: 0.9em; color: #666; margin-top: 0.5rem; font-style: italic; }' +
 				'div[align="center"] { text-align: center; margin: 1rem 0; }' +
 				
-				// Print-specific styles
+				// Enhanced code block styles for PDF
+				'pre { ' +
+				'background: #2c3e50; ' +
+				'color: #ecf0f1; ' +
+				'padding: 1rem; ' +
+				'border-radius: 4px; ' +
+				'margin: 1rem 0; ' +
+				'white-space: pre-wrap !important; ' +
+				'word-wrap: break-word !important; ' +
+				'overflow-wrap: break-word !important; ' +
+				'max-width: 100%; ' +
+				'font-size: 0.85em; ' +
+				'}' +
+
+				// Page break styles
+				'.page-break { ' +
+				'page-break-after: always; ' +
+				'break-after: always; ' +
+				'height: 0; ' +
+				'margin: 0; ' +
+				'border: none; ' +
+				'display: block; ' +
+				'}' +
+
+				// Screen display of page breaks
+				'@media screen { ' +
+				'.page-break { ' +
+				'height: 2px; ' +
+				'background: repeating-linear-gradient(90deg, #ccc 0, #ccc 5px, transparent 5px, transparent 10px); ' +
+				'margin: 2rem 0; ' +
+				'position: relative; ' +
+				'}' +
+				'.page-break::after { ' +
+				'content: "페이지 나누기"; ' +
+				'position: absolute; ' +
+				'left: 50%; ' +
+				'top: 50%; ' +
+				'transform: translate(-50%, -50%); ' +
+				'background: white; ' +
+				'padding: 0 1rem; ' +
+				'color: #999; ' +
+				'font-size: 0.8rem; ' +
+				'}' +
+				'}' +
+
+				// Print-specific styles with better page break control
 				'@media print {' +
-				'@page { margin: 20mm; size: A4; }' +
-				'body { margin: 0; padding: 0; -webkit-print-color-adjust: exact; }' +
-				'table { page-break-inside: avoid; }' +
-				'tr { page-break-inside: avoid; }' +
-				'img { page-break-inside: avoid; }' +
-				'figure { page-break-inside: avoid; }' +
-				'h1, h2, h3, h4, h5, h6 { page-break-after: avoid; }' +
-				'blockquote { page-break-inside: avoid; }' +
-				'pre { page-break-inside: avoid; }' +
+				'@page { ' +
+				'margin: 15mm 15mm 20mm 15mm; ' +
+				'size: A4; ' +
+				'}' +
+				'body { ' +
+				'margin: 0; ' +
+				'padding: 0; ' +
+				'-webkit-print-color-adjust: exact; ' +
+				'print-color-adjust: exact; ' +
+				'font-size: 11pt; ' +
+				'}' +
+
+				// Prevent breaking inside elements
+				'pre, code, blockquote, table, img, figure { ' +
+				'page-break-inside: avoid !important; ' +
+				'break-inside: avoid !important; ' +
+				'}' +
+
+				// Keep headings with their content
+				'h1, h2, h3, h4, h5, h6 { ' +
+				'page-break-after: avoid !important; ' +
+				'break-after: avoid !important; ' +
+				'page-break-inside: avoid !important; ' +
+				'}' +
+
+				// Keep at least 2 lines together
+				'p { ' +
+				'orphans: 3; ' +
+				'widows: 3; ' +
+				'}' +
+
+				// Keep list items together
+				'li { ' +
+				'page-break-inside: avoid !important; ' +
+				'break-inside: avoid !important; ' +
+				'}' +
+
+				// Handle long code blocks
+				'pre { ' +
+				'white-space: pre-wrap !important; ' +
+				'word-wrap: break-word !important; ' +
+				'}' +
+
+				// Force page breaks
+				'.page-break { ' +
+				'page-break-after: always !important; ' +
+				'break-after: page !important; ' +
+				'height: 0 !important; ' +
+				'display: block !important; ' +
+				'border: none !important; ' +
+				'}' +
+
 				'.print-buttons { display: none !important; }' +
 				'}' +
 				'</style>' +
@@ -634,15 +827,38 @@ function hello() {
 		document.addEventListener('mousemove', handleMouseMove);
 		document.addEventListener('mouseup', handleMouseUp);
 		
+		// Setup Electron IPC listeners
+		if (isElectron && window.electronAPI) {
+			window.electronAPI.onFileOpened((data) => {
+				markdownText = data.content;
+				fileName = data.fileName;
+				updatePreview();
+			});
+
+			window.electronAPI.onSaveFile(() => {
+				saveAsMarkdown();
+			});
+
+			window.electronAPI.onExportPDF(() => {
+				exportToPDF();
+			});
+		}
+		
 		// Handle Ctrl+S to save to localStorage
 		const handleKeydown = (e: KeyboardEvent) => {
 			if ((e.ctrlKey || e.metaKey) && e.key === 's') {
 				e.preventDefault();
-				manualSave();
+				if (isElectron) {
+					saveAsMarkdown();
+				} else {
+					manualSave();
+				}
 			}
 			if ((e.ctrlKey || e.metaKey) && e.key === 'o') {
 				e.preventDefault();
-				openLocalFile();
+				if (!isElectron) {
+					openLocalFile();
+				}
 			}
 		};
 		
@@ -686,6 +902,12 @@ function hello() {
 		if (debounceTimer) clearTimeout(debounceTimer);
 		// Stop any running intervals
 		stopAutoSave();
+		// Clean up Electron listeners
+		if (isElectron && window.electronAPI) {
+			window.electronAPI.removeAllListeners('file-opened');
+			window.electronAPI.removeAllListeners('save-file');
+			window.electronAPI.removeAllListeners('export-pdf');
+		}
 	});
 </script>
 
@@ -783,35 +1005,35 @@ function hello() {
 			<h2>
 				에디터
 				{#if markdownText.includes('data:image')}
-					<span class="image-indicator">📷 긴 Base64 이미지 자동 축약</span>
+					<span class="image-indicator">📷 이미지 미리보기 표시</span>
 				{/if}
 			</h2>
-			<textarea 
+			<textarea
 				value={displayText}
 				on:input={(e) => {
 					const newValue = e.currentTarget.value;
-					const base64ShortPattern = /!\[([^\]]*)\]\((data:image\/[^;]+;base64,)[^)]+\.\.\.[^)]+\) 📷\[\d+KB\]/g;
-					
+					const base64ShortPattern = /!\[([^\]]*)\]\((data:image\/[^;]+;base64,)[^)]+\.\.\.\.[^)]+\) 📷\[\d+KB\]/g;
+
 					// Check if there are compressed image patterns
 					let hasShortImages = false;
 					let restoreCount = 0;
-					
+
 					const restoredText = newValue.replace(base64ShortPattern, (match) => {
 						hasShortImages = true;
 						// Find original image in imageMap with proper error handling
 						const imageId = `img-${restoreCount}`;
-						const original = imageMap.get(imageId);
+						const imageData = imageMap.get(imageId);
 						restoreCount++;
-						
-						if (!original) {
+
+						if (!imageData) {
 							console.warn(`Failed to restore original image for ID: ${imageId}`);
-							// Return match as fallback, but this should not happen in normal usage
+							// Return match as fallback
 							return match;
 						}
-						
-						return original;
+
+						return imageData.markdown;
 					});
-					
+
 					// Use restored text if compressed images were found, otherwise use as-is
 					markdownText = hasShortImages ? restoredText : newValue;
 				}}
@@ -824,6 +1046,40 @@ function hello() {
 				on:drop={handleDrop}
 				on:paste={handlePaste}
 			></textarea>
+			{#if imageMap.size > 0}
+				<div class="image-thumbnails">
+					{#each Array.from(imageMap.entries()) as [imageId, imageData]}
+						<div class="image-thumbnail" data-image-id={imageId}>
+							<div class="thumbnail-header">
+								<span>📷 {imageData.altText} ({imageData.size}KB)</span>
+								<select
+									class="size-select"
+									on:change={(e) => updateImagePreviewSize(imageId, e.currentTarget.value)}
+								>
+									<option value="100">100px</option>
+									<option value="200">200px</option>
+									<option value="400" selected>400px</option>
+									<option value="600">600px</option>
+								</select>
+							</div>
+							{#if !foldedImages.has(imageId)}
+								<img
+									src={imageData.dataUrl}
+									alt={imageData.altText}
+									class="thumbnail-image"
+									style="max-width: 400px;"
+								/>
+							{/if}
+							<button
+								class="toggle-btn"
+								on:click={() => toggleImageFold(imageId)}
+							>
+								{foldedImages.has(imageId) ? '👁️ 보기' : '🙈 숨기기'}
+							</button>
+						</div>
+					{/each}
+				</div>
+			{/if}
 		</div>
 		
 		<!-- svelte-ignore a11y-no-noninteractive-tabindex -->
@@ -1002,6 +1258,78 @@ function hello() {
 		margin-left: 1rem;
 		font-weight: normal;
 		opacity: 0.8;
+	}
+
+	.image-thumbnails {
+		position: absolute;
+		bottom: 1rem;
+		right: 1rem;
+		max-width: 450px;
+		max-height: 40%;
+		overflow-y: auto;
+		background: white;
+		border: 1px solid #ddd;
+		border-radius: 4px;
+		box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+		padding: 0.5rem;
+		z-index: 100;
+	}
+
+	.image-thumbnail {
+		margin-bottom: 0.75rem;
+		padding: 0.5rem;
+		background: #f9f9f9;
+		border-radius: 4px;
+		border: 1px solid #e0e0e0;
+	}
+
+	.image-thumbnail:last-child {
+		margin-bottom: 0;
+	}
+
+	.thumbnail-header {
+		display: flex;
+		justify-content: space-between;
+		align-items: center;
+		margin-bottom: 0.5rem;
+		font-size: 0.85rem;
+		color: #666;
+	}
+
+	.size-select {
+		padding: 0.2rem 0.4rem;
+		border: 1px solid #ddd;
+		border-radius: 3px;
+		background: white;
+		font-size: 0.75rem;
+		cursor: pointer;
+	}
+
+	.size-select:hover {
+		border-color: #3498db;
+	}
+
+	.thumbnail-image {
+		width: 100%;
+		height: auto;
+		border-radius: 3px;
+		margin-bottom: 0.5rem;
+	}
+
+	.toggle-btn {
+		width: 100%;
+		background: #3498db;
+		color: white;
+		border: none;
+		padding: 0.3rem;
+		border-radius: 3px;
+		cursor: pointer;
+		font-size: 0.8rem;
+		transition: background-color 0.2s;
+	}
+
+	.toggle-btn:hover {
+		background: #2980b9;
 	}
 
 	.export-dropdown {
@@ -1199,6 +1527,34 @@ function hello() {
 		border-radius: 4px;
 		overflow-x: auto;
 		margin: 1rem 0;
+		white-space: pre-wrap;
+		word-wrap: break-word;
+	}
+
+	/* Page break indicator in preview */
+	.preview :global(.page-break) {
+		height: 2px;
+		background: repeating-linear-gradient(
+			90deg,
+			#ccc 0,
+			#ccc 5px,
+			transparent 5px,
+			transparent 10px
+		);
+		margin: 2rem 0;
+		position: relative;
+	}
+
+	.preview :global(.page-break::after) {
+		content: "페이지 나누기";
+		position: absolute;
+		left: 50%;
+		top: 50%;
+		transform: translate(-50%, -50%);
+		background: white;
+		padding: 0 1rem;
+		color: #999;
+		font-size: 0.8rem;
 	}
 
 	.preview :global(pre code) {
