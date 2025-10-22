@@ -1,4 +1,4 @@
-import adapter from '@sveltejs/adapter-netlify';
+import adapter from '@sveltejs/adapter-static';
 import { vitePreprocess } from '@sveltejs/vite-plugin-svelte';
 
 /** @type {import('@sveltejs/kit').Config} */
@@ -8,11 +8,23 @@ const config = {
 	preprocess: vitePreprocess(),
 
 	kit: {
-		// Use Netlify adapter for optimal Netlify deployment
+		// Use static adapter for SPA deployment on Netlify
 		adapter: adapter({
-			edge: false,
-			split: false
-		})
+			pages: 'build',
+			assets: 'build',
+			fallback: 'index.html',
+			precompress: false,
+			strict: true
+		}),
+		prerender: {
+			handleHttpError: ({ path, referrer, message }) => {
+				// Ignore favicon.png 404 error
+				if (path === '/favicon.png') {
+					return;
+				}
+				throw new Error(message);
+			}
+		}
 	}
 };
 
