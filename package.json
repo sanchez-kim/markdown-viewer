@@ -26,8 +26,6 @@
     "html2canvas": "^1.4.1",
     "html2pdf.js": "^0.11.2",
     "jspdf": "^3.0.2",
-    "marked": "^16.2.0",
-    "puppeteer": "^24.17.0",
-    "puppeteer-core": "^24.17.0"
+    "marked": "^16.2.0"
   }
 }
