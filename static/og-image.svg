@@ -1,6 +1,10 @@
 <svg width="1200" height="630" viewBox="0 0 1200 630" xmlns="http://www.w3.org/2000/svg">
-  <!-- Background Gradient -->
+  <!-- Pretendard Font -->
   <defs>
+    <style>
+      @import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css');
+    </style>
+
     <linearGradient id="bgGradient" x1="0%" y1="0%" x2="100%" y2="100%">
       <stop offset="0%" style="stop-color:#667eea;stop-opacity:1" />
       <stop offset="100%" style="stop-color:#764ba2;stop-opacity:1" />
@@ -8,7 +12,7 @@
 
     <linearGradient id="textGradient" x1="0%" y1="0%" x2="100%" y2="0%">
       <stop offset="0%" style="stop-color:#ffffff;stop-opacity:1" />
-      <stop offset="100%" style="stop-color:#e0e7ff;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#f0f4ff;stop-opacity:1" />
     </linearGradient>
   </defs>
 
@@ -20,41 +24,51 @@
   <circle cx="1100" cy="530" r="200" fill="rgba(255,255,255,0.08)"/>
 
   <!-- Main Content Container -->
-  <g transform="translate(100, 180)">
+  <g transform="translate(100, 150)">
 
-    <!-- Logo Icon (Simple Markdown Icon) -->
+    <!-- Logo Icon with M and Down Arrow -->
     <g transform="translate(0, 0)">
-      <rect x="0" y="0" width="120" height="120" rx="20" fill="rgba(255,255,255,0.2)" stroke="#ffffff" stroke-width="3"/>
-      <text x="60" y="85" font-family="Arial, sans-serif" font-size="72" fill="#ffffff" text-anchor="middle" font-weight="bold">M↓</text>
+      <!-- Background Box -->
+      <rect x="0" y="0" width="140" height="140" rx="24" fill="rgba(255,255,255,0.25)" stroke="#ffffff" stroke-width="4"/>
+
+      <!-- Centered Content (4x scaled from logo.svg) -->
+      <g transform="translate(70, 70)">
+        <!-- M Letter (exact replica from logo.svg, 4x scale) -->
+        <path d="M -46 -20 L -46 20 L -34 20 L -34 -6.625 L -22 9.25 L -10 -6.625 L -10 20 L 2 20 L 2 -20 L -10 -20 L -22 -4 L -34 -20 Z"
+              fill="#ffffff"/>
+
+        <!-- Down Arrow (exact replica from logo.svg, 4x scale) -->
+        <path d="M 22 -20 L 22 0 L 10 0 L 28 20 L 46 0 L 34 0 L 34 -20 Z"
+              fill="#ffffff"/>
+      </g>
     </g>
 
-    <!-- Title -->
-    <text x="150" y="60" font-family="'Noto Sans KR', Arial, sans-serif" font-size="68" fill="url(#textGradient)" font-weight="bold">이지 마크다운</text>
-    <text x="150" y="110" font-family="Arial, sans-serif" font-size="48" fill="rgba(255,255,255,0.9)" font-weight="300">EasyMD</text>
+    <!-- Title Section -->
+    <g transform="translate(170, 0)">
+      <text x="0" y="70" font-family="'Pretendard', -apple-system, sans-serif" font-size="80" fill="#ffffff" font-weight="800" letter-spacing="-0.02em">이지 마크다운</text>
+      <text x="0" y="125" font-family="'Pretendard', -apple-system, sans-serif" font-size="52" fill="rgba(255,255,255,0.95)" font-weight="600" letter-spacing="0.02em">EasyMD</text>
+    </g>
 
     <!-- Tagline -->
-    <text x="0" y="180" font-family="'Noto Sans KR', Arial, sans-serif" font-size="32" fill="rgba(255,255,255,0.85)">브라우저에서 바로 쓰는 무료 마크다운 에디터</text>
+    <text x="0" y="220" font-family="'Pretendard', -apple-system, sans-serif" font-size="36" fill="rgba(255,255,255,0.9)" font-weight="500">브라우저에서 바로 쓰는 무료 마크다운 에디터</text>
 
     <!-- Features -->
-    <g transform="translate(0, 220)">
+    <g transform="translate(0, 270)">
       <!-- Feature 1 -->
-      <circle cx="10" cy="0" r="6" fill="#ffffff"/>
-      <text x="30" y="7" font-family="'Noto Sans KR', Arial, sans-serif" font-size="24" fill="rgba(255,255,255,0.95)">실시간 미리보기</text>
+      <circle cx="12" cy="0" r="7" fill="#ffffff"/>
+      <text x="35" y="8" font-family="'Pretendard', -apple-system, sans-serif" font-size="28" fill="#ffffff" font-weight="500">실시간 미리보기</text>
 
       <!-- Feature 2 -->
-      <circle cx="260" cy="0" r="6" fill="#ffffff"/>
-      <text x="280" y="7" font-family="'Noto Sans KR', Arial, sans-serif" font-size="24" fill="rgba(255,255,255,0.95)">자동 저장</text>
+      <circle cx="280" cy="0" r="7" fill="#ffffff"/>
+      <text x="303" y="8" font-family="'Pretendard', -apple-system, sans-serif" font-size="28" fill="#ffffff" font-weight="500">자동 저장</text>
 
       <!-- Feature 3 -->
-      <circle cx="450" cy="0" r="6" fill="#ffffff"/>
-      <text x="470" y="7" font-family="'Noto Sans KR', Arial, sans-serif" font-size="24" fill="rgba(255,255,255,0.95)">PDF 내보내기</text>
+      <circle cx="490" cy="0" r="7" fill="#ffffff"/>
+      <text x="513" y="8" font-family="'Pretendard', -apple-system, sans-serif" font-size="28" fill="#ffffff" font-weight="500">PDF 내보내기</text>
 
       <!-- Feature 4 -->
-      <circle cx="700" cy="0" r="6" fill="#ffffff"/>
-      <text x="720" y="7" font-family="'Noto Sans KR', Arial, sans-serif" font-size="24" fill="rgba(255,255,255,0.95)">개인정보 수집 없음</text>
+      <circle cx="760" cy="0" r="7" fill="#ffffff"/>
+      <text x="783" y="8" font-family="'Pretendard', -apple-system, sans-serif" font-size="28" fill="#ffffff" font-weight="500">개인정보 수집 없음</text>
     </g>
   </g>
-
-  <!-- Footer URL -->
-  <text x="600" y="590" font-family="Arial, sans-serif" font-size="28" fill="rgba(255,255,255,0.7)" text-anchor="middle">easymd.netlify.app</text>
 </svg>
