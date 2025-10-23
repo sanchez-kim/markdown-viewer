@@ -3,6 +3,9 @@
 	import { marked } from 'marked';
 	import hljs from 'highlight.js';
 	import { browser } from '$app/environment';
+	import Toast from '$lib/components/Toast.svelte';
+	import { toastStore } from '$lib/stores/toast';
+	import { themeStore } from '$lib/stores/theme';
 
 	let markdownText = `# 🎉 마크다운 뷰어에 오신 것을 환영합니다!
 
@@ -62,6 +65,8 @@ function hello() {
 	let isDragOverImage = false;
 	let foldedImages = new Set<string>(); // Folded image IDs
 	let imageIdCounter = 0; // Unique ID counter for images
+	let showMobileMenu = false;
+	let showShortcutsModal = false;
 
 	// Configure marked with highlight.js - with proper typing
 	marked.setOptions({
@@ -180,7 +185,7 @@ function hello() {
 	// Manual save function
 	function manualSave() {
 		saveToLocal();
-		alert('로컬스토리지에 저장되었습니다!');
+		toastStore.show('로컬스토리지에 저장되었습니다!', 'success');
 	}
 
 	// ===== FILE I/O OPERATIONS =====
@@ -272,9 +277,9 @@ function hello() {
 				const writable = await fileHandle.createWritable();
 				await writable.write(markdownText);
 				await writable.close();
-				
+
 				currentFileName = fileHandle.name;
-				alert('파일이 저장되었습니다!');
+				toastStore.show('파일이 저장되었습니다!', 'success');
 			} else {
 				// Fallback: download
 				downloadMarkdown();
@@ -331,6 +336,10 @@ function hello() {
 	// ===== SCROLL SYNCHRONIZATION =====
 	function toggleScrollSync() {
 		isScrollSyncEnabled = !isScrollSyncEnabled;
+	}
+
+	function toggleMobileMenu() {
+		showMobileMenu = !showMobileMenu;
 	}
 
 	function syncEditorScroll(event: Event) {
@@ -415,12 +424,12 @@ function hello() {
 	async function handleImageUpload(file: File) {
 		try {
 			if (!file.type.startsWith('image/')) {
-				alert('이미지 파일만 업로드할 수 있습니다.');
+				toastStore.show('이미지 파일만 업로드할 수 있습니다.', 'error');
 				return;
 			}
 
 			if (file.size > 5 * 1024 * 1024) { // 5MB limit
-				alert('이미지 크기는 5MB 이하로 제한됩니다.');
+				toastStore.show('이미지 크기는 5MB 이하로 제한됩니다.', 'warning');
 				return;
 			}
 
@@ -429,9 +438,10 @@ function hello() {
 			const imageMarkdown = `\n![${fileName}](${base64})\n`;
 			
 			insertImageAtCursor(imageMarkdown);
+			toastStore.show('이미지가 추가되었습니다!', 'success');
 		} catch (error) {
 			console.error('이미지 업로드 실패:', error);
-			alert('이미지 업로드에 실패했습니다.');
+			toastStore.show('이미지 업로드에 실패했습니다.', 'error');
 		}
 	}
 
@@ -451,9 +461,9 @@ function hello() {
 		
 		const files = Array.from(event.dataTransfer?.files || []);
 		const imageFiles = files.filter(file => file.type.startsWith('image/'));
-		
+
 		if (imageFiles.length === 0) {
-			alert('이미지 파일을 드롭해주세요.');
+			toastStore.show('이미지 파일을 드롭해주세요.', 'warning');
 			return;
 		}
 
@@ -502,7 +512,7 @@ function hello() {
 			const printWindow = window.open('', '_blank');
 			
 			if (!printWindow) {
-				alert('팝업이 차단되었습니다. 팝업을 허용해주세요.');
+				toastStore.show('팝업이 차단되었습니다. 팝업을 허용해주세요.', 'error');
 				saveStatus = 'saved';
 				return;
 			}
@@ -603,7 +613,7 @@ function hello() {
 			
 		} catch (error) {
 			console.error('PDF 생성 중 오류가 발생했습니다:', error);
-			alert('PDF 생성 중 오류가 발생했습니다: ' + (error instanceof Error ? error.message : String(error)));
+			toastStore.show('PDF 생성 중 오류가 발생했습니다: ' + (error instanceof Error ? error.message : String(error)), 'error');
 			saveStatus = 'saved';
 		}
 	}
@@ -636,6 +646,7 @@ function hello() {
 		updatePreview();
 		loadFromLocal(); // Check saved content on page load
 		startAutoSave(); // Start auto-save with 5-minute interval
+		themeStore.init(); // Initialize theme
 		
 		// Add global event listeners for mouse events
 		document.addEventListener('mousemove', handleMouseMove);
@@ -651,6 +662,16 @@ function hello() {
 				e.preventDefault();
 				openLocalFile();
 			}
+			if (e.key === '?' && !e.ctrlKey && !e.metaKey) {
+				const target = e.target as HTMLElement;
+				if (target.tagName !== 'TEXTAREA' && target.tagName !== 'INPUT') {
+					e.preventDefault();
+					showShortcutsModal = !showShortcutsModal;
+				}
+			}
+			if (e.key === 'Escape') {
+				showShortcutsModal = false;
+			}
 		};
 		
 		// Close dropdown when clicking outside
@@ -663,7 +684,14 @@ function hello() {
 		
 		document.addEventListener('keydown', handleKeydown);
 		document.addEventListener('click', handleClickOutside);
-		
+
+		// Initialize AdSense
+		try {
+			((window as any).adsbygoogle = (window as any).adsbygoogle || []).push({});
+		} catch (error) {
+			console.error('AdSense initialization error:', error);
+		}
+
 		return () => {
 			document.removeEventListener('mousemove', handleMouseMove);
 			document.removeEventListener('mouseup', handleMouseUp);
@@ -700,6 +728,56 @@ function hello() {
 	<title>마크다운 뷰어</title>
 	<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github.min.css">
 </svelte:head>
+
+<Toast />
+
+{#if showShortcutsModal}
+	<div class="modal-overlay" on:click={() => showShortcutsModal = false} role="dialog" aria-modal="true">
+		<div class="modal-content" on:click|stopPropagation role="document">
+			<div class="modal-header">
+				<h2>⌨️ 키보드 단축키</h2>
+				<button class="modal-close" on:click={() => showShortcutsModal = false} aria-label="닫기">
+					×
+				</button>
+			</div>
+			<div class="modal-body">
+				<div class="shortcut-section">
+					<h3>파일 작업</h3>
+					<div class="shortcut-item">
+						<kbd>Ctrl</kbd> + <kbd>S</kbd>
+						<span>저장</span>
+					</div>
+					<div class="shortcut-item">
+						<kbd>Ctrl</kbd> + <kbd>O</kbd>
+						<span>파일 열기</span>
+					</div>
+					<div class="shortcut-item">
+						<kbd>Ctrl</kbd> + <kbd>V</kbd>
+						<span>이미지 붙여넣기</span>
+					</div>
+				</div>
+				<div class="shortcut-section">
+					<h3>편집</h3>
+					<div class="shortcut-item">
+						<kbd>Enter</kbd>
+						<span>파일명 변경 완료</span>
+					</div>
+					<div class="shortcut-item">
+						<kbd>Escape</kbd>
+						<span>변경 취소 / 모달 닫기</span>
+					</div>
+				</div>
+				<div class="shortcut-section">
+					<h3>도움말</h3>
+					<div class="shortcut-item">
+						<kbd>?</kbd>
+						<span>이 가이드 열기/닫기</span>
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
+{/if}
 
 <div class="app">
 	<header class="header">
@@ -739,7 +817,10 @@ function hello() {
 				</span>
 			</div>
 		</div>
-		<div class="controls">
+		<button class="mobile-menu-toggle" on:click={toggleMobileMenu} aria-label="메뉴 열기">
+			{showMobileMenu ? '✕' : '☰'}
+		</button>
+		<div class="controls" class:mobile-open={showMobileMenu}>
 			<input 
 				type="file" 
 				accept=".md,.markdown" 
@@ -771,13 +852,20 @@ function hello() {
 					</div>
 				{/if}
 			</div>
-			<button 
-				on:click={toggleScrollSync} 
+			<button
+				on:click={toggleScrollSync}
 				class="sync-button"
 				class:active={isScrollSyncEnabled}
 				title="스크롤 연동 {isScrollSyncEnabled ? '끄기' : '켜기'}"
 			>
 				{isScrollSyncEnabled ? '📍' : '🔓'} 스크롤 연동
+			</button>
+			<button
+				on:click={() => themeStore.toggle()}
+				class="theme-button"
+				title="다크 모드 {$themeStore === 'dark' ? '끄기' : '켜기'}"
+			>
+				{$themeStore === 'dark' ? '☀️' : '🌙'} 테마
 			</button>
 		</div>
 	</header>
@@ -858,13 +946,62 @@ function hello() {
 			</div>
 		</div>
 	</main>
+
+	<!-- Google AdSense Bottom Banner -->
+	<footer class="ad-footer">
+		<ins class="adsbygoogle"
+		     style="display:block"
+		     data-ad-client="ca-pub-4776602848700794"
+		     data-ad-format="auto"
+		     data-full-width-responsive="true"></ins>
+	</footer>
 </div>
 
 <style>
+	:global(:root) {
+		--bg-primary: #f5f5f5;
+		--bg-secondary: #ffffff;
+		--bg-tertiary: #fefefe;
+		--bg-quaternary: #ecf0f1;
+		--bg-header: #2c3e50;
+		--text-primary: #000000;
+		--text-secondary: #1f2937;
+		--text-tertiary: #7f8c8d;
+		--text-header: #2c3e50;
+		--border-color: #ddd;
+		--border-color-light: #bdc3c7;
+		--code-bg: #f1f2f6;
+		--code-text: #2c3e50;
+		--blockquote-bg: #f8f9fa;
+		--table-header-bg: #f8f9fa;
+		--ad-bg: #f8f9fa;
+	}
+
+	:global(html.dark) {
+		--bg-primary: #1a1a1a;
+		--bg-secondary: #242424;
+		--bg-tertiary: #2a2a2a;
+		--bg-quaternary: #333333;
+		--bg-header: #1a1a1a;
+		--text-primary: #e0e0e0;
+		--text-secondary: #d0d0d0;
+		--text-tertiary: #a0a0a0;
+		--text-header: #e0e0e0;
+		--border-color: #404040;
+		--border-color-light: #505050;
+		--code-bg: #2a2a2a;
+		--code-text: #e0e0e0;
+		--blockquote-bg: #2a2a2a;
+		--table-header-bg: #2a2a2a;
+		--ad-bg: #242424;
+	}
+
 	:global(body) {
 		margin: 0;
 		font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-		background-color: #f5f5f5;
+		background-color: var(--bg-primary);
+		color: var(--text-primary);
+		transition: background-color 0.3s, color 0.3s;
 	}
 
 	.app {
@@ -874,13 +1011,14 @@ function hello() {
 	}
 
 	.header {
-		background: #2c3e50;
+		background: var(--bg-header);
 		color: white;
 		padding: 1rem 2rem;
 		display: flex;
 		justify-content: space-between;
 		align-items: center;
 		box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+		transition: background-color 0.3s;
 	}
 
 	.title-section {
@@ -959,6 +1097,22 @@ function hello() {
 		color: #ffd700;
 	}
 
+	.mobile-menu-toggle {
+		display: none;
+		background: #3498db;
+		color: white;
+		border: none;
+		padding: 0.5rem 1rem;
+		border-radius: 4px;
+		cursor: pointer;
+		font-size: 1.2rem;
+		transition: background-color 0.2s;
+	}
+
+	.mobile-menu-toggle:hover {
+		background: #2980b9;
+	}
+
 	.controls {
 		display: flex;
 		gap: 0.5rem;
@@ -1001,6 +1155,14 @@ function hello() {
 
 	.sync-button:not(.active):hover {
 		background: rgba(231, 76, 60, 0.9) !important;
+	}
+
+	.theme-button {
+		transition: all 0.3s ease;
+	}
+
+	.theme-button:hover {
+		transform: scale(1.05);
 	}
 
 	.image-indicator {
@@ -1126,11 +1288,12 @@ function hello() {
 	.preview-section h2 {
 		margin: 0;
 		padding: 1rem;
-		background: #ecf0f1;
-		border-bottom: 1px solid #ddd;
+		background: var(--bg-quaternary);
+		border-bottom: 1px solid var(--border-color);
 		font-size: 1rem;
 		font-weight: 600;
-		color: #2c3e50;
+		color: var(--text-header);
+		transition: background-color 0.3s, color 0.3s, border-color 0.3s;
 	}
 
 	.editor {
@@ -1142,8 +1305,9 @@ function hello() {
 		line-height: 1.6;
 		resize: none;
 		outline: none;
-		background: #fefefe;
-		transition: all 0.2s ease;
+		background: var(--bg-tertiary);
+		color: var(--text-primary);
+		transition: all 0.3s ease;
 	}
 
 	.editor.drag-over {
@@ -1155,9 +1319,11 @@ function hello() {
 	.preview {
 		flex: 1;
 		padding: 1rem;
-		background: white;
+		background: var(--bg-secondary);
+		color: var(--text-secondary);
 		overflow-y: auto;
 		line-height: 1.6;
+		transition: background-color 0.3s, color 0.3s;
 	}
 
 	/* Markdown styling */
@@ -1167,9 +1333,10 @@ function hello() {
 	.preview :global(h4),
 	.preview :global(h5),
 	.preview :global(h6) {
-		color: #2c3e50;
+		color: var(--text-header);
 		margin-top: 1.5em;
 		margin-bottom: 0.5em;
+		transition: color 0.3s;
 	}
 
 	.preview :global(h1) {
@@ -1186,17 +1353,20 @@ function hello() {
 		border-left: 4px solid #3498db;
 		padding-left: 1rem;
 		margin: 1rem 0;
-		color: #7f8c8d;
-		background: #f8f9fa;
+		color: var(--text-tertiary);
+		background: var(--blockquote-bg);
 		padding: 0.5rem 1rem;
+		transition: background-color 0.3s, color 0.3s;
 	}
 
 	.preview :global(code) {
-		background: #f1f2f6;
+		background: var(--code-bg);
+		color: var(--code-text);
 		padding: 0.2em 0.4em;
 		border-radius: 3px;
 		font-family: 'Monaco', 'Menlo', monospace;
 		font-size: 0.9em;
+		transition: background-color 0.3s, color 0.3s;
 	}
 
 	.preview :global(pre) {
@@ -1250,6 +1420,146 @@ function hello() {
 		margin: 0.25rem 0;
 	}
 
+	/* Modal Styles */
+	.modal-overlay {
+		position: fixed;
+		top: 0;
+		left: 0;
+		right: 0;
+		bottom: 0;
+		background: rgba(0, 0, 0, 0.7);
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		z-index: 10000;
+		animation: fadeIn 0.2s;
+	}
+
+	.modal-content {
+		background: var(--bg-secondary);
+		border-radius: 12px;
+		max-width: 600px;
+		width: 90%;
+		max-height: 80vh;
+		overflow-y: auto;
+		box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+		animation: slideUp 0.3s;
+	}
+
+	.modal-header {
+		display: flex;
+		justify-content: space-between;
+		align-items: center;
+		padding: 1.5rem;
+		border-bottom: 1px solid var(--border-color);
+	}
+
+	.modal-header h2 {
+		margin: 0;
+		color: var(--text-primary);
+		font-size: 1.5rem;
+	}
+
+	.modal-close {
+		background: none;
+		border: none;
+		font-size: 2rem;
+		cursor: pointer;
+		color: var(--text-tertiary);
+		width: 32px;
+		height: 32px;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		border-radius: 4px;
+		transition: all 0.2s;
+	}
+
+	.modal-close:hover {
+		background: var(--bg-tertiary);
+		color: var(--text-primary);
+	}
+
+	.modal-body {
+		padding: 1.5rem;
+	}
+
+	.shortcut-section {
+		margin-bottom: 1.5rem;
+	}
+
+	.shortcut-section h3 {
+		color: var(--text-primary);
+		margin: 0 0 1rem 0;
+		font-size: 1.1rem;
+		font-weight: 600;
+	}
+
+	.shortcut-item {
+		display: flex;
+		align-items: center;
+		padding: 0.75rem;
+		margin-bottom: 0.5rem;
+		background: var(--bg-tertiary);
+		border-radius: 6px;
+		gap: 0.5rem;
+		transition: background-color 0.2s;
+	}
+
+	.shortcut-item:hover {
+		background: var(--bg-quaternary);
+	}
+
+	.shortcut-item kbd {
+		background: var(--bg-quaternary);
+		border: 1px solid var(--border-color);
+		border-radius: 4px;
+		padding: 0.3rem 0.6rem;
+		font-family: monospace;
+		font-size: 0.9rem;
+		color: var(--text-primary);
+		box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+	}
+
+	.shortcut-item span {
+		flex: 1;
+		color: var(--text-secondary);
+		font-size: 0.95rem;
+	}
+
+	@keyframes fadeIn {
+		from {
+			opacity: 0;
+		}
+		to {
+			opacity: 1;
+		}
+	}
+
+	@keyframes slideUp {
+		from {
+			transform: translateY(20px);
+			opacity: 0;
+		}
+		to {
+			transform: translateY(0);
+			opacity: 1;
+		}
+	}
+
+	/* Ad Footer */
+	.ad-footer {
+		background: var(--ad-bg);
+		padding: 1rem;
+		text-align: center;
+		border-top: 1px solid var(--border-color);
+		min-height: 90px;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		transition: background-color 0.3s, border-color 0.3s;
+	}
+
 	/* Responsive design */
 	@media (max-width: 768px) {
 		.main {
@@ -1270,14 +1580,42 @@ function hello() {
 			border-bottom: 1px solid #ddd;
 		}
 
+		.mobile-menu-toggle {
+			display: block;
+		}
+
 		.controls {
-			flex-wrap: wrap;
+			position: absolute;
+			top: 100%;
+			right: 0;
+			background: var(--bg-header);
+			flex-direction: column;
+			width: 200px;
+			box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+			border-radius: 0 0 0 8px;
+			padding: 0.5rem;
+			max-height: 0;
+			overflow: hidden;
+			opacity: 0;
+			transition: max-height 0.3s ease, opacity 0.3s ease;
+			z-index: 1000;
+		}
+
+		.controls.mobile-open {
+			max-height: 500px;
+			opacity: 1;
+		}
+
+		.controls button {
+			width: 100%;
+			text-align: left;
 		}
 
 		.header {
 			flex-direction: column;
 			gap: 1rem;
 			align-items: stretch;
+			position: relative;
 		}
 
 		.title-section {
