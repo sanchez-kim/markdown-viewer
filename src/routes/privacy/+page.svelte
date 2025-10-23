@@ -3,7 +3,7 @@
 	import { themeStore } from '$lib/stores/theme';
 
 	onMount(() => {
-		document.title = '개인정보처리방침 - 마크다운 뷰어';
+		document.title = '개인정보처리방침 - 이지 마크다운';
 		themeStore.init();
 	});
 </script>
@@ -16,7 +16,7 @@
 		<section>
 			<h2>1. 개요</h2>
 			<p>
-				마크다운 뷰어("서비스")는 사용자의 프라이버시를 존중하며, 개인정보 보호에 최선을 다하고 있습니다.
+				이지 마크다운 (EasyMD, "서비스")는 사용자의 프라이버시를 존중하며, 개인정보 보호에 최선을 다하고 있습니다.
 				본 개인정보처리방침은 서비스 이용 시 수집되는 정보와 그 사용 방법에 대해 설명합니다.
 			</p>
 		</section>
@@ -38,7 +38,7 @@
 			</p>
 
 			<h3>2.2 분석 정보 (Cloudflare Web Analytics)</h3>
-			<p>서비스 개선을 위해 다음 정보를 수집합니다:</p>
+			<p>서비스 개선을 위해 다음 익명 통계 정보를 수집합니다:</p>
 			<ul>
 				<li>페이지 조회수</li>
 				<li>방문자 국가</li>
@@ -48,6 +48,13 @@
 			<p>
 				<strong>Cloudflare Web Analytics는 쿠키를 사용하지 않으며</strong>,
 				IP 주소를 저장하지 않고, 개인을 식별할 수 없는 방식으로 작동합니다.
+				따라서 <strong>별도의 사용자 동의가 필요하지 않습니다</strong>.
+			</p>
+			<p>
+				Cloudflare의 개인정보처리방침:
+				<a href="https://www.cloudflare.com/privacypolicy/" target="_blank" rel="noopener">
+					https://www.cloudflare.com/privacypolicy/
+				</a>
 			</p>
 
 			<h3>2.3 광고 서비스 (Google AdSense)</h3>

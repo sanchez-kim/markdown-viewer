@@ -7,7 +7,7 @@
 	import { toastStore } from '$lib/stores/toast';
 	import { themeStore } from '$lib/stores/theme';
 
-	let markdownText = `# 🎉 마크다운 뷰어에 오신 것을 환영합니다!
+	let markdownText = `# 🎉 이지 마크다운에 오신 것을 환영합니다!
 
 이곳에서 **마크다운 문서**를 쉽고 편리하게 작성해보세요. 왼쪽에 글을 쓰면 오른쪽에서 바로 결과를 확인할 수 있어요!
 
@@ -725,7 +725,7 @@ function hello() {
 </script>
 
 <svelte:head>
-	<title>마크다운 뷰어</title>
+	<title>이지 마크다운 - EasyMD</title>
 	<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github.min.css">
 </svelte:head>
 
@@ -782,7 +782,7 @@ function hello() {
 <div class="app">
 	<header class="header">
 		<div class="title-section">
-			<h1>📝 마크다운 뷰어</h1>
+			<h1>📝 이지 마크다운</h1>
 			<div class="status-info">
 				{#if isEditingFilename}
 					<input 
@@ -976,7 +976,7 @@ function hello() {
 				<a href="https://github.com/sanchez-kim/markdown-viewer" target="_blank" rel="noopener">GitHub</a>
 			</div>
 			<div class="footer-copyright">
-				© 2025 마크다운 뷰어. MIT License.
+				© 2025 이지 마크다운 (EasyMD)
 			</div>
 		</div>
 	</footer>

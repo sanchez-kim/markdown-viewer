@@ -3,7 +3,7 @@
 	import { themeStore } from '$lib/stores/theme';
 
 	onMount(() => {
-		document.title = '이용약관 - 마크다운 뷰어';
+		document.title = '이용약관 - 이지 마크다운';
 		themeStore.init();
 	});
 </script>
@@ -16,7 +16,7 @@
 		<section>
 			<h2>1. 서비스 소개</h2>
 			<p>
-				마크다운 뷰어("서비스")는 사용자가 마크다운 문서를 작성하고 미리보기할 수 있는
+				이지 마크다운 (EasyMD, "서비스")는 사용자가 마크다운 문서를 작성하고 미리보기할 수 있는
 				무료 웹 기반 도구입니다. 본 약관은 서비스 이용에 적용됩니다.
 			</p>
 		</section>
@@ -55,7 +55,7 @@
 
 			<h3>4.1 서비스</h3>
 			<p>
-				서비스의 소스 코드는 MIT 라이선스 하에 제공됩니다.
+				서비스의 소스 코드는 오픈소스로 제공됩니다.
 				자세한 내용은 <a href="https://github.com/sanchez-kim/markdown-viewer" target="_blank" rel="noopener">GitHub 저장소</a>를 참조하세요.
 			</p>
 

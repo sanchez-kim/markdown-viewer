@@ -1,8 +1,8 @@
-# 📝 마크다운 뷰어
+# 📝 이지 마크다운 (EasyMD)
 
 실시간 마크다운 편집과 미리보기를 제공하는 웹 기반 마크다운 에디터입니다.
 
-🌐 **[라이브 데모 보기](https://markdown-viewer-sanchez.netlify.app/)**
+🌐 **[라이브 데모 보기](https://easymd.netlify.app/)**
 
 [![GitHub Sponsors](https://img.shields.io/badge/Sponsor-❤️-ff69b4?style=for-the-badge&logo=github-sponsors)](https://github.com/sponsors/sanchez-kim)
 [![Buy Me a Coffee](https://img.shields.io/badge/Buy%20Me%20a%20Coffee-☕-FFDD00?style=for-the-badge&logo=buy-me-a-coffee&logoColor=black)](https://buymeacoffee.com/sanchezkim7)
@@ -174,7 +174,7 @@ npm run preview
 
 ## 📄 라이선스
 
-[MIT License](LICENSE) - Copyright (c) 2025 Sanchez Kim
+오픈소스 프로젝트입니다. 자세한 내용은 [LICENSE](LICENSE) 파일을 참조하세요.
 
 ---
 
