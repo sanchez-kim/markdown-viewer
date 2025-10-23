@@ -1,0 +1,60 @@
+<svg width="1200" height="630" viewBox="0 0 1200 630" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background Gradient -->
+  <defs>
+    <linearGradient id="bgGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#667eea;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#764ba2;stop-opacity:1" />
+    </linearGradient>
+
+    <linearGradient id="textGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#ffffff;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#e0e7ff;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+
+  <!-- Background -->
+  <rect width="1200" height="630" fill="url(#bgGradient)"/>
+
+  <!-- Decorative Elements -->
+  <circle cx="100" cy="100" r="150" fill="rgba(255,255,255,0.1)"/>
+  <circle cx="1100" cy="530" r="200" fill="rgba(255,255,255,0.08)"/>
+
+  <!-- Main Content Container -->
+  <g transform="translate(100, 180)">
+
+    <!-- Logo Icon (Simple Markdown Icon) -->
+    <g transform="translate(0, 0)">
+      <rect x="0" y="0" width="120" height="120" rx="20" fill="rgba(255,255,255,0.2)" stroke="#ffffff" stroke-width="3"/>
+      <text x="60" y="85" font-family="Arial, sans-serif" font-size="72" fill="#ffffff" text-anchor="middle" font-weight="bold">M↓</text>
+    </g>
+
+    <!-- Title -->
+    <text x="150" y="60" font-family="'Noto Sans KR', Arial, sans-serif" font-size="68" fill="url(#textGradient)" font-weight="bold">이지 마크다운</text>
+    <text x="150" y="110" font-family="Arial, sans-serif" font-size="48" fill="rgba(255,255,255,0.9)" font-weight="300">EasyMD</text>
+
+    <!-- Tagline -->
+    <text x="0" y="180" font-family="'Noto Sans KR', Arial, sans-serif" font-size="32" fill="rgba(255,255,255,0.85)">브라우저에서 바로 쓰는 무료 마크다운 에디터</text>
+
+    <!-- Features -->
+    <g transform="translate(0, 220)">
+      <!-- Feature 1 -->
+      <circle cx="10" cy="0" r="6" fill="#ffffff"/>
+      <text x="30" y="7" font-family="'Noto Sans KR', Arial, sans-serif" font-size="24" fill="rgba(255,255,255,0.95)">실시간 미리보기</text>
+
+      <!-- Feature 2 -->
+      <circle cx="260" cy="0" r="6" fill="#ffffff"/>
+      <text x="280" y="7" font-family="'Noto Sans KR', Arial, sans-serif" font-size="24" fill="rgba(255,255,255,0.95)">자동 저장</text>
+
+      <!-- Feature 3 -->
+      <circle cx="450" cy="0" r="6" fill="#ffffff"/>
+      <text x="470" y="7" font-family="'Noto Sans KR', Arial, sans-serif" font-size="24" fill="rgba(255,255,255,0.95)">PDF 내보내기</text>
+
+      <!-- Feature 4 -->
+      <circle cx="700" cy="0" r="6" fill="#ffffff"/>
+      <text x="720" y="7" font-family="'Noto Sans KR', Arial, sans-serif" font-size="24" fill="rgba(255,255,255,0.95)">개인정보 수집 없음</text>
+    </g>
+  </g>
+
+  <!-- Footer URL -->
+  <text x="600" y="590" font-family="Arial, sans-serif" font-size="28" fill="rgba(255,255,255,0.7)" text-anchor="middle">easymd.netlify.app</text>
+</svg>

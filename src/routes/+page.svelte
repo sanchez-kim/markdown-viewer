@@ -737,14 +737,14 @@ function hello() {
 	<meta property="og:url" content="https://easymd.netlify.app/" />
 	<meta property="og:title" content="이지 마크다운 - EasyMD | 무료 실시간 마크다운 에디터" />
 	<meta property="og:description" content="브라우저에서 바로 사용하는 무료 마크다운 에디터. 실시간 미리보기, 자동 저장, PDF 내보내기 지원." />
-	<meta property="og:image" content="https://easymd.netlify.app/og-image.png" />
+	<meta property="og:image" content="https://easymd.netlify.app/og-image.svg" />
 
 	<!-- Twitter -->
 	<meta property="twitter:card" content="summary_large_image" />
 	<meta property="twitter:url" content="https://easymd.netlify.app/" />
 	<meta property="twitter:title" content="이지 마크다운 - EasyMD | 무료 실시간 마크다운 에디터" />
 	<meta property="twitter:description" content="브라우저에서 바로 사용하는 무료 마크다운 에디터. 실시간 미리보기, 자동 저장, PDF 내보내기 지원." />
-	<meta property="twitter:image" content="https://easymd.netlify.app/og-image.png" />
+	<meta property="twitter:image" content="https://easymd.netlify.app/og-image.svg" />
 
 	<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github.min.css">
 </svelte:head>
