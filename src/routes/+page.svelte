@@ -957,12 +957,28 @@ function hello() {
 	</main>
 
 	<!-- Google AdSense Bottom Banner -->
-	<footer class="ad-footer">
+	<div class="ad-footer">
 		<ins class="adsbygoogle"
 		     style="display:block"
 		     data-ad-client="ca-pub-4776602848700794"
 		     data-ad-format="auto"
 		     data-full-width-responsive="true"></ins>
+	</div>
+
+	<!-- Legal Footer -->
+	<footer class="legal-footer">
+		<div class="footer-content">
+			<div class="footer-links">
+				<a href="/privacy">개인정보처리방침</a>
+				<span class="separator">|</span>
+				<a href="/terms">이용약관</a>
+				<span class="separator">|</span>
+				<a href="https://github.com/sanchez-kim/markdown-viewer" target="_blank" rel="noopener">GitHub</a>
+			</div>
+			<div class="footer-copyright">
+				© 2025 마크다운 뷰어. MIT License.
+			</div>
+		</div>
 	</footer>
 </div>
 
@@ -1596,6 +1612,55 @@ function hello() {
 		transition: background-color 0.3s, border-color 0.3s;
 	}
 
+	/* Legal Footer */
+	.legal-footer {
+		background: var(--bg-header);
+		color: var(--text-tertiary);
+		padding: 1.5rem 2rem;
+		border-top: 1px solid var(--border-color);
+		transition: background-color 0.3s, color 0.3s;
+	}
+
+	.footer-content {
+		max-width: 1200px;
+		margin: 0 auto;
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		gap: 0.75rem;
+	}
+
+	.footer-links {
+		display: flex;
+		align-items: center;
+		gap: 0.5rem;
+		flex-wrap: wrap;
+		justify-content: center;
+	}
+
+	.footer-links a {
+		color: rgba(255, 255, 255, 0.8);
+		text-decoration: none;
+		font-size: 0.9rem;
+		transition: color 0.2s;
+	}
+
+	.footer-links a:hover {
+		color: rgba(255, 255, 255, 1);
+		text-decoration: underline;
+	}
+
+	.footer-links .separator {
+		color: rgba(255, 255, 255, 0.4);
+		user-select: none;
+	}
+
+	.footer-copyright {
+		color: rgba(255, 255, 255, 0.6);
+		font-size: 0.85rem;
+		text-align: center;
+	}
+
 	/* Responsive design */
 	@media (max-width: 768px) {
 		.main {
@@ -1661,6 +1726,18 @@ function hello() {
 
 		.status-info {
 			align-items: center;
+		}
+
+		.legal-footer {
+			padding: 1rem;
+		}
+
+		.footer-links {
+			font-size: 0.85rem;
+		}
+
+		.footer-copyright {
+			font-size: 0.8rem;
 		}
 	}
 </style>
