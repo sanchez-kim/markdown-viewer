@@ -867,6 +867,15 @@ function hello() {
 			>
 				{$themeStore === 'dark' ? '☀️' : '🌙'} 테마
 			</button>
+			<a
+				href="https://buymeacoffee.com/sanchezkim7"
+				target="_blank"
+				rel="noopener noreferrer"
+				class="sponsor-button"
+				title="개발자에게 커피 한 잔 사주기"
+			>
+				☕ 후원
+			</a>
 		</div>
 	</header>
 
@@ -1163,6 +1172,33 @@ function hello() {
 
 	.theme-button:hover {
 		transform: scale(1.05);
+	}
+
+	.sponsor-button {
+		background: #FFDD00;
+		color: #000000;
+		border: none;
+		padding: 0.5rem 1rem;
+		border-radius: 4px;
+		cursor: pointer;
+		font-size: 0.9rem;
+		font-weight: 600;
+		text-decoration: none;
+		display: inline-flex;
+		align-items: center;
+		gap: 0.25rem;
+		transition: all 0.3s ease;
+		box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+	}
+
+	.sponsor-button:hover {
+		background: #FFED4E;
+		transform: translateY(-2px);
+		box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+	}
+
+	.sponsor-button:active {
+		transform: translateY(0);
 	}
 
 	.image-indicator {

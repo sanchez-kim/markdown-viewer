@@ -4,6 +4,9 @@
 
 🌐 **[라이브 데모 보기](https://markdown-viewer-sanchez.netlify.app/)**
 
+[![GitHub Sponsors](https://img.shields.io/badge/Sponsor-❤️-ff69b4?style=for-the-badge&logo=github-sponsors)](https://github.com/sponsors/sanchez-kim)
+[![Buy Me a Coffee](https://img.shields.io/badge/Buy%20Me%20a%20Coffee-☕-FFDD00?style=for-the-badge&logo=buy-me-a-coffee&logoColor=black)](https://buymeacoffee.com/sanchezkim7)
+
 ## ✨ 주요 기능
 
 ### 📖 **실시간 편집 및 미리보기**
