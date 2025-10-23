@@ -11,7 +11,7 @@
 <div class="legal-page">
 	<div class="container">
 		<h1>개인정보처리방침</h1>
-		<p class="update-date">최종 업데이트: 2025년 1월</p>
+		<p class="update-date">최종 업데이트: 2025년 10월</p>
 
 		<section>
 			<h2>1. 개요</h2>

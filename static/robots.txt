@@ -1,3 +1,6 @@
-# allow crawling everything by default
+# Allow all crawlers
 User-agent: *
-Disallow:
+Allow: /
+
+# Sitemap
+Sitemap: https://easymd.netlify.app/sitemap.xml

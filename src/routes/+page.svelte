@@ -725,7 +725,27 @@ function hello() {
 </script>
 
 <svelte:head>
-	<title>이지 마크다운 - EasyMD</title>
+	<title>이지 마크다운 - EasyMD | 무료 실시간 마크다운 에디터</title>
+
+	<!-- SEO Meta Tags -->
+	<meta name="description" content="브라우저에서 바로 사용하는 무료 마크다운 에디터. 실시간 미리보기, 자동 저장, PDF 내보내기 지원. 로그인 불필요, 개인정보 수집 없음." />
+	<meta name="keywords" content="마크다운, 마크다운 에디터, markdown, markdown editor, 실시간 미리보기, 무료 에디터, 온라인 에디터, PDF 변환" />
+	<meta name="author" content="Sanchez Kim" />
+
+	<!-- Open Graph / Facebook -->
+	<meta property="og:type" content="website" />
+	<meta property="og:url" content="https://easymd.netlify.app/" />
+	<meta property="og:title" content="이지 마크다운 - EasyMD | 무료 실시간 마크다운 에디터" />
+	<meta property="og:description" content="브라우저에서 바로 사용하는 무료 마크다운 에디터. 실시간 미리보기, 자동 저장, PDF 내보내기 지원." />
+	<meta property="og:image" content="https://easymd.netlify.app/og-image.png" />
+
+	<!-- Twitter -->
+	<meta property="twitter:card" content="summary_large_image" />
+	<meta property="twitter:url" content="https://easymd.netlify.app/" />
+	<meta property="twitter:title" content="이지 마크다운 - EasyMD | 무료 실시간 마크다운 에디터" />
+	<meta property="twitter:description" content="브라우저에서 바로 사용하는 무료 마크다운 에디터. 실시간 미리보기, 자동 저장, PDF 내보내기 지원." />
+	<meta property="twitter:image" content="https://easymd.netlify.app/og-image.png" />
+
 	<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github.min.css">
 </svelte:head>
 
@@ -782,7 +802,10 @@ function hello() {
 <div class="app">
 	<header class="header">
 		<div class="title-section">
-			<h1>📝 이지 마크다운</h1>
+			<h1>
+				<img src="/logo.svg" alt="EasyMD Logo" class="logo-icon" />
+				이지 마크다운
+			</h1>
 			<div class="status-info">
 				{#if isEditingFilename}
 					<input 
@@ -969,6 +992,8 @@ function hello() {
 	<footer class="legal-footer">
 		<div class="footer-content">
 			<div class="footer-links">
+				<a href="/about">소개</a>
+				<span class="separator">|</span>
 				<a href="/privacy">개인정보처리방침</a>
 				<span class="separator">|</span>
 				<a href="/terms">이용약관</a>
@@ -1055,6 +1080,15 @@ function hello() {
 	.header h1 {
 		margin: 0;
 		font-size: 1.5rem;
+		display: flex;
+		align-items: center;
+		gap: 0.5rem;
+	}
+
+	.logo-icon {
+		width: 2rem;
+		height: 2rem;
+		flex-shrink: 0;
 	}
 
 	.status-info {
