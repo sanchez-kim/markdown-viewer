@@ -67,6 +67,7 @@ function hello() {
 	let imageIdCounter = 0; // Unique ID counter for images
 	let showMobileMenu = false;
 	let showShortcutsModal = false;
+	let mobileView: 'editor' | 'preview' = 'editor'; // Mobile tab view
 
 	// Configure marked with highlight.js - with proper typing
 	marked.setOptions({
@@ -685,13 +686,6 @@ function hello() {
 		document.addEventListener('keydown', handleKeydown);
 		document.addEventListener('click', handleClickOutside);
 
-		// Initialize AdSense
-		try {
-			((window as any).adsbygoogle = (window as any).adsbygoogle || []).push({});
-		} catch (error) {
-			console.error('AdSense initialization error:', error);
-		}
-
 		return () => {
 			document.removeEventListener('mousemove', handleMouseMove);
 			document.removeEventListener('mouseup', handleMouseUp);
@@ -902,9 +896,28 @@ function hello() {
 		</div>
 	</header>
 
+	<!-- Mobile Tab Switcher -->
+	<div class="mobile-tabs">
+		<button
+			class="mobile-tab"
+			class:active={mobileView === 'editor'}
+			on:click={() => mobileView = 'editor'}
+		>
+			✏️ 편집
+		</button>
+		<button
+			class="mobile-tab"
+			class:active={mobileView === 'preview'}
+			on:click={() => mobileView = 'preview'}
+		>
+			👁️ 미리보기
+		</button>
+	</div>
+
 	<main bind:this={mainElement} class="main" style="cursor: {isDragging ? 'col-resize' : 'default'}">
-		<div 
-			class="editor-section" 
+		<div
+			class="editor-section"
+			class:mobile-hidden={mobileView !== 'editor'}
 			style="width: {editorWidth}%"
 		>
 			<h2>
@@ -964,8 +977,9 @@ function hello() {
 			tabindex="0"
 		></div>
 		
-		<div 
-			class="preview-section" 
+		<div
+			class="preview-section"
+			class:mobile-hidden={mobileView !== 'preview'}
 			style="width: {100 - editorWidth}%"
 		>
 			<h2>미리보기</h2>
@@ -978,15 +992,6 @@ function hello() {
 			</div>
 		</div>
 	</main>
-
-	<!-- Google AdSense Bottom Banner -->
-	<div class="ad-footer">
-		<ins class="adsbygoogle"
-		     style="display:block"
-		     data-ad-client="ca-pub-4776602848700794"
-		     data-ad-format="auto"
-		     data-full-width-responsive="true"></ins>
-	</div>
 
 	<!-- Legal Footer -->
 	<footer class="legal-footer">
@@ -1633,19 +1638,6 @@ function hello() {
 		}
 	}
 
-	/* Ad Footer */
-	.ad-footer {
-		background: var(--ad-bg);
-		padding: 1rem;
-		text-align: center;
-		border-top: 1px solid var(--border-color);
-		min-height: 90px;
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		transition: background-color 0.3s, border-color 0.3s;
-	}
-
 	/* Legal Footer */
 	.legal-footer {
 		background: var(--bg-header);
@@ -1695,8 +1687,48 @@ function hello() {
 		text-align: center;
 	}
 
+	/* Mobile Tabs */
+	.mobile-tabs {
+		display: none;
+		background: var(--bg-header);
+		border-bottom: 1px solid var(--border-color);
+		padding: 0.5rem;
+		gap: 0.5rem;
+	}
+
+	.mobile-tab {
+		flex: 1;
+		padding: 0.75rem 1rem;
+		background: var(--bg-secondary);
+		border: 1px solid var(--border-color);
+		border-radius: 6px;
+		color: var(--text-secondary);
+		font-size: 0.95rem;
+		font-weight: 500;
+		cursor: pointer;
+		transition: all 0.2s;
+	}
+
+	.mobile-tab:hover {
+		background: var(--bg-tertiary);
+	}
+
+	.mobile-tab.active {
+		background: #3498db;
+		color: white;
+		border-color: #3498db;
+	}
+
 	/* Responsive design */
 	@media (max-width: 768px) {
+		.mobile-tabs {
+			display: flex;
+		}
+
+		.mobile-hidden {
+			display: none !important;
+		}
+
 		.main {
 			flex-direction: column;
 		}
@@ -1708,11 +1740,11 @@ function hello() {
 		.editor-section,
 		.preview-section {
 			width: 100% !important;
-			height: 50vh;
+			height: calc(100vh - 180px);
 		}
 
 		.editor-section {
-			border-bottom: 1px solid #ddd;
+			border-bottom: none;
 		}
 
 		.mobile-menu-toggle {
