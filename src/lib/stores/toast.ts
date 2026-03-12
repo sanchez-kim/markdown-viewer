@@ -2,11 +2,17 @@ import { writable } from 'svelte/store';
 
 export type ToastType = 'success' | 'error' | 'info' | 'warning';
 
+export interface ToastAction {
+	label: string;
+	onClick: () => void;
+}
+
 export interface Toast {
 	id: number;
 	message: string;
 	type: ToastType;
 	duration?: number;
+	action?: ToastAction;
 }
 
 function createToastStore() {
@@ -15,9 +21,9 @@ function createToastStore() {
 
 	return {
 		subscribe,
-		show: (message: string, type: ToastType = 'info', duration: number = 3000) => {
+		show: (message: string, type: ToastType = 'info', duration: number = 3000, action?: ToastAction) => {
 			const id = idCounter++;
-			const toast: Toast = { id, message, type, duration };
+			const toast: Toast = { id, message, type, duration, action };
 
 			update((toasts) => [...toasts, toast]);
 

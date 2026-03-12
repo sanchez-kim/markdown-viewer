@@ -221,22 +221,43 @@ function hello() {
 			const savedFilename = localStorage.getItem('markdown-viewer-filename');
 			const savedTimestamp = localStorage.getItem('markdown-viewer-timestamp');
 
-			if (savedContent && savedContent !== markdownText) {
-				if (confirm(`저장된 초안이 있습니다 (${new Date(savedTimestamp || '').toLocaleString()}). 불러오시겠습니까?`)) {
-					markdownText = savedContent;
-					currentFileName = savedFilename || 'untitled.md';
-					previousText = savedContent; // Update previous text after loading
-					updatePreview();
-					saveStatus = 'saved'; // Loaded content is in saved state
-				}
-			} else if (savedContent) {
-				// Set to saved state even when current text matches saved content
+			if (savedContent) {
+				// Auto-restore saved draft silently
+				markdownText = savedContent;
+				currentFileName = savedFilename || 'untitled.md';
+				previousText = savedContent;
 				saveStatus = 'saved';
-				previousText = markdownText;
+
+				// Show non-blocking info toast with "새 문서" action
+				const savedTime = savedTimestamp
+					? new Date(savedTimestamp).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' })
+					: '';
+				toastStore.show(
+					`이전 작업을 불러왔습니다${savedTime ? ` (${savedTime})` : ''}`,
+					'info',
+					0, // persistent until dismissed
+					{ label: '새 문서로 시작', onClick: newDocument }
+				);
 			}
 		} catch (error) {
 			console.error('불러오기 실패:', error);
 		}
+	}
+
+	function newDocument() {
+		if (saveStatus === 'unsaved') {
+			if (!confirm('저장되지 않은 내용이 있습니다. 새 문서를 시작하면 사라집니다. 계속하시겠습니까?')) return;
+		}
+		markdownText = '';
+		currentFileName = 'untitled.md';
+		saveStatus = 'saved';
+		previousText = '';
+		if (tiptapEditor) {
+			tiptapEditor.commands.setContent('');
+		}
+		localStorage.removeItem('markdown-viewer-content');
+		localStorage.removeItem('markdown-viewer-filename');
+		localStorage.removeItem('markdown-viewer-timestamp');
 	}
 
 	// Auto-save every 5 minutes
@@ -1346,6 +1367,9 @@ function hello() {
 				id="file-input"
 				style="display: none;"
 			>
+			<button on:click={newDocument} title="새 문서 시작">
+				🆕 새 문서
+			</button>
 			<button on:click={openLocalFile} title="마크다운 파일 불러오기 (Ctrl+O)">
 				📂 불러오기
 			</button>

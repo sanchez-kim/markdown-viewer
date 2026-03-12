@@ -20,6 +20,14 @@
 		>
 			<span class="toast-icon">{iconMap[toast.type]}</span>
 			<span class="toast-message">{toast.message}</span>
+			{#if toast.action}
+				<button
+					class="toast-action"
+					on:click={() => { toast.action?.onClick(); toastStore.dismiss(toast.id); }}
+				>
+					{toast.action.label}
+				</button>
+			{/if}
 			<button
 				class="toast-close"
 				on:click={() => toastStore.dismiss(toast.id)}
@@ -87,6 +95,24 @@
 		font-size: 0.95rem;
 		color: #1f2937;
 		line-height: 1.5;
+	}
+
+	.toast-action {
+		background: none;
+		border: 1px solid currentColor;
+		border-radius: 4px;
+		padding: 0.25rem 0.6rem;
+		font-size: 0.85rem;
+		font-weight: 600;
+		cursor: pointer;
+		color: #3b82f6;
+		white-space: nowrap;
+		flex-shrink: 0;
+		transition: background-color 0.15s;
+	}
+
+	.toast-action:hover {
+		background-color: rgba(59, 130, 246, 0.1);
 	}
 
 	.toast-close {
