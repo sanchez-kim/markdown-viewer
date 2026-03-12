@@ -696,12 +696,17 @@ function hello() {
 							if (file) insertImageToTiptap(file);
 							return true;
 						}
-						// Force plain-text path to avoid VS Code/editor HTML bleeding
-						const text = clipboardData?.getData('text/plain');
-						if (text) {
-							event.preventDefault();
-							view.pasteText(text);
-							return true;
+						// Only override when HTML is also present (VS Code/editor HTML bleeding).
+						// Plain-text-only pastes are handled natively by tiptap-markdown —
+						// calling view.pasteText() on those causes '\' to appear on every line.
+						const types = clipboardData?.types ?? [];
+						if (types.includes('text/html') && types.includes('text/plain')) {
+							const text = clipboardData!.getData('text/plain');
+							if (text) {
+								event.preventDefault();
+								view.pasteText(text);
+								return true;
+							}
 						}
 						return false;
 					},
