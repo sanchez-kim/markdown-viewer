@@ -16,12 +16,13 @@
 <div class="legal-page">
 	<div class="container">
 		<h1>이지 마크다운 (EasyMD) 소개</h1>
-		<p class="tagline">브라우저에서 바로 쓰는 가장 쉬운 마크다운 에디터</p>
+		<p class="tagline">노션처럼 쓰고, 마크다운으로 저장하는 무료 웹 에디터</p>
 
 		<section>
 			<h2>✨ 이지 마크다운이란?</h2>
 			<p>
-				<strong>이지 마크다운 (EasyMD)</strong>은 누구나 쉽게 사용할 수 있는 무료 웹 기반 마크다운 에디터입니다.
+				<strong>이지 마크다운 (EasyMD)</strong>은 노션처럼 편하게 쓰면서 마크다운으로 저장할 수 있는
+				무료 웹 기반 WYSIWYG 에디터입니다.
 				복잡한 설치나 회원가입 없이, 브라우저만 있으면 바로 시작할 수 있습니다.
 			</p>
 			<p>
@@ -34,28 +35,38 @@
 			<h2>🎯 핵심 기능</h2>
 
 			<div class="feature">
-				<h3>📖 실시간 미리보기</h3>
-				<p>왼쪽에서 작성하면 오른쪽에서 즉시 결과를 확인할 수 있습니다.</p>
+				<h3>✏️ WYSIWYG 인터랙티브 편집</h3>
+				<p>마크다운 문법을 입력하면 즉시 서식이 적용됩니다. <code>#</code> → 제목, <code>**텍스트**</code> → <strong>굵게</strong>, <code>- </code> → 글머리 기호로 자동 변환됩니다.</p>
+			</div>
+
+			<div class="feature">
+				<h3>🔧 서식 도구 모음 (BubbleMenu)</h3>
+				<p>텍스트를 선택하면 서식 도구 모음이 자동으로 나타납니다. 굵게·기울임·밑줄·취소선·인라인 코드, 10가지 글자 색상, 7가지 배경 하이라이트, 제목 수준, 링크를 바로 적용할 수 있습니다.</p>
+			</div>
+
+			<div class="feature">
+				<h3>⚡ 슬래시 명령어 (<code>/</code>)</h3>
+				<p>빈 줄에서 <code>/</code>를 입력하면 블록 추가 메뉴가 표시됩니다. 제목·글머리 기호·번호 목록·체크리스트·코드 블록·인용구·표·구분선을 빠르게 삽입할 수 있습니다. 표는 행/열 수를 직접 지정할 수 있습니다.</p>
+			</div>
+
+			<div class="feature">
+				<h3>🗃️ 인터랙티브 표 편집</h3>
+				<p>표 안에 커서를 두면 표 도구 모음이 자동으로 표시됩니다. 행과 열을 추가하거나 삭제하고, 표 전체를 삭제할 수 있습니다.</p>
+			</div>
+
+			<div class="feature">
+				<h3>🖼️ 인라인 이미지 (Notion처럼)</h3>
+				<p>에디터에 이미지를 드래그 앤 드롭하거나 <code>Ctrl+V</code>로 스크린샷을 바로 붙여넣을 수 있습니다. 이미지는 자동으로 최대 1280px로 압축되며, 좌우 드래그로 크기를 조절할 수 있습니다.</p>
 			</div>
 
 			<div class="feature">
 				<h3>💾 자동 저장</h3>
-				<p>5분마다 자동으로 저장되며, Ctrl+S로 언제든 수동 저장할 수 있습니다.</p>
+				<p>5분마다 자동으로 저장되며, <code>Ctrl+S</code>로 언제든 수동 저장할 수 있습니다.</p>
 			</div>
 
 			<div class="feature">
-				<h3>📄 PDF 내보내기</h3>
-				<p>작성한 문서를 깔끔한 PDF로 저장할 수 있습니다.</p>
-			</div>
-
-			<div class="feature">
-				<h3>🖼️ 이미지 지원</h3>
-				<p>드래그 앤 드롭, 복사 붙여넣기로 간편하게 이미지를 삽입할 수 있습니다.</p>
-			</div>
-
-			<div class="feature">
-				<h3>🔄 스크롤 연동</h3>
-				<p>에디터와 미리보기가 함께 스크롤되어 편집 위치를 쉽게 찾을 수 있습니다.</p>
+				<h3>📁 다양한 내보내기</h3>
+				<p>마크다운 파일 (<code>.md</code>), PDF (브라우저 인쇄), Word 문서 (<code>.docx</code>)로 내보낼 수 있습니다.</p>
 			</div>
 
 			<div class="feature">
@@ -87,9 +98,11 @@
 		<section>
 			<h2>🚀 기술 스택</h2>
 			<ul>
-				<li><strong>프레임워크</strong>: SvelteKit</li>
+				<li><strong>프레임워크</strong>: SvelteKit 2</li>
+				<li><strong>WYSIWYG 에디터</strong>: Tiptap 3</li>
 				<li><strong>마크다운 파서</strong>: Marked.js</li>
 				<li><strong>구문 강조</strong>: Highlight.js</li>
+				<li><strong>XSS 방어</strong>: DOMPurify</li>
 				<li><strong>호스팅</strong>: Netlify</li>
 				<li><strong>분석</strong>: Cloudflare Web Analytics (쿠키 없음)</li>
 			</ul>

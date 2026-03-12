@@ -2,10 +2,30 @@
 	import { onMount, onDestroy } from 'svelte';
 	import { marked } from 'marked';
 	import hljs from 'highlight.js';
+	import 'highlight.js/styles/github.min.css';
+	import DOMPurify from 'dompurify';
 	import { browser } from '$app/environment';
 	import Toast from '$lib/components/Toast.svelte';
 	import { toastStore } from '$lib/stores/toast';
 	import { themeStore } from '$lib/stores/theme';
+	import { Document, Packer, Paragraph, TextRun, Table, TableRow, TableCell, HeadingLevel, AlignmentType, WidthType, BorderStyle } from 'docx';
+	import { saveAs } from 'file-saver';
+	import { Editor } from '@tiptap/core';
+	import StarterKit from '@tiptap/starter-kit';
+	import Image from '@tiptap/extension-image';
+	import Link from '@tiptap/extension-link';
+	import BubbleMenuExt from '@tiptap/extension-bubble-menu';
+		import { Table as TiptapTable } from '@tiptap/extension-table';
+	import TableRowExt from '@tiptap/extension-table-row';
+	import TableCellExt from '@tiptap/extension-table-cell';
+	import TableHeaderExt from '@tiptap/extension-table-header';
+	import TaskList from '@tiptap/extension-task-list';
+	import TaskItem from '@tiptap/extension-task-item';
+	import Placeholder from '@tiptap/extension-placeholder';
+	import { Markdown as MarkdownExt } from 'tiptap-markdown';
+	import { TextStyle, Color } from '@tiptap/extension-text-style';
+	import Highlight from '@tiptap/extension-highlight';
+	import Underline from '@tiptap/extension-underline';
 
 	let markdownText = `# 🎉 이지 마크다운에 오신 것을 환영합니다!
 
@@ -49,25 +69,54 @@ function hello() {
 지금 바로 이 글을 지우고 새로운 문서를 만들어보세요! 🚀`;
 
 	let renderedHtml = '';
-	let previewElement: HTMLDivElement;
-	let splitterElement: HTMLDivElement;
-	let mainElement: HTMLElement;
-	let isDragging = false;
-	let editorWidth = 50; // percentage
+	let previewElement: HTMLDivElement | undefined;
 	let lastSaved = '';
 	let saveStatus = 'saved'; // 'saved', 'saving', 'unsaved'
 	let currentFileName = 'untitled.md';
 	let isEditingFilename = false;
 	let tempFileName = '';
-	let isScrollSyncEnabled = true;
-	let isScrolling = false;
 	let showExportDropdown = false;
-	let isDragOverImage = false;
-	let foldedImages = new Set<string>(); // Folded image IDs
 	let imageIdCounter = 0; // Unique ID counter for images
 	let showMobileMenu = false;
 	let showShortcutsModal = false;
-	let mobileView: 'editor' | 'preview' = 'editor'; // Mobile tab view
+
+	// ===== TIPTAP EDITOR STATE =====
+	let tiptapEditor: Editor | null = null;
+	let editorContainer: HTMLDivElement;
+	let bubbleMenuElement: HTMLDivElement;
+	let tableBubbleMenuElement: HTMLDivElement;
+
+	// ===== SLASH COMMAND STATE =====
+	let slashMenuVisible = false;
+	let slashMenuPos = { x: 0, y: 0 };
+	let slashMenuFilter = '';
+
+	// ===== COLOR PICKER STATE =====
+	let showColorPicker = false;
+	let showHighlightPicker = false;
+
+	const TEXT_COLORS = [
+		{ label: '기본', value: '' },
+		{ label: '빨강', value: '#e03131' },
+		{ label: '주황', value: '#e8590c' },
+		{ label: '노랑', value: '#f08c00' },
+		{ label: '초록', value: '#2f9e44' },
+		{ label: '청록', value: '#0c8599' },
+		{ label: '파랑', value: '#1971c2' },
+		{ label: '보라', value: '#7048e8' },
+		{ label: '분홍', value: '#c2255c' },
+		{ label: '회색', value: '#868e96' },
+	];
+
+	const HIGHLIGHT_COLORS = [
+		{ label: '없음', value: '' },
+		{ label: '노랑', value: '#fff3bf' },
+		{ label: '초록', value: '#d3f9d8' },
+		{ label: '파랑', value: '#d0ebff' },
+		{ label: '분홍', value: '#ffdeeb' },
+		{ label: '주황', value: '#ffe8cc' },
+		{ label: '보라', value: '#e5dbff' },
+	];
 
 	// Configure marked with highlight.js - with proper typing
 	marked.setOptions({
@@ -84,13 +133,20 @@ function hello() {
 	// ===== MARKDOWN RENDERING =====
 	function updatePreview() {
 		const result = marked(markdownText);
-		renderedHtml = typeof result === 'string' ? result : result.toString();
+		const raw = typeof result === 'string' ? result : result.toString();
+		renderedHtml = browser ? DOMPurify.sanitize(raw) : raw;
 	}
 
 	// ===== INLINE IMAGE FOLDING =====
 	let displayText = '';
 	let imageMap = new Map<string, string>(); // Store original images with proper typing
 	let debounceTimer: ReturnType<typeof setTimeout> | null = null;
+	let previewDebounceTimer: ReturnType<typeof setTimeout> | null = null;
+
+	function schedulePreviewUpdate() {
+		if (previewDebounceTimer) clearTimeout(previewDebounceTimer);
+		previewDebounceTimer = setTimeout(updatePreview, 150);
+	}
 	
 	// Debounced processing to improve performance
 	$: {
@@ -129,10 +185,23 @@ function hello() {
 			lastSaved = new Date().toLocaleTimeString();
 			saveStatus = 'saved';
 			previousText = markdownText; // Update previous text after saving
-			console.log('로컬스토리지 저장 완료:', markdownText.substring(0, 50) + '...');
 		} catch (error) {
 			console.error('저장 실패:', error);
 			saveStatus = 'unsaved';
+			// QuotaExceededError 감지
+			const isQuotaError = error instanceof DOMException && (
+				error.name === 'QuotaExceededError' ||
+				error.name === 'NS_ERROR_DOM_QUOTA_REACHED'
+			);
+			if (isQuotaError) {
+				toastStore.show(
+					'저장 공간이 부족합니다. 이미지를 줄이거나 브라우저 캐시를 정리해주세요.',
+					'error',
+					6000
+				);
+			} else {
+				toastStore.show('저장에 실패했습니다.', 'error');
+			}
 		}
 	}
 
@@ -143,9 +212,7 @@ function hello() {
 			const savedContent = localStorage.getItem('markdown-viewer-content');
 			const savedFilename = localStorage.getItem('markdown-viewer-filename');
 			const savedTimestamp = localStorage.getItem('markdown-viewer-timestamp');
-			
-			console.log('로컬스토리지에서 불러온 내용:', savedContent?.substring(0, 50) + '...');
-			
+
 			if (savedContent && savedContent !== markdownText) {
 				if (confirm(`저장된 초안이 있습니다 (${new Date(savedTimestamp || '').toLocaleString()}). 불러오시겠습니까?`)) {
 					markdownText = savedContent;
@@ -171,7 +238,6 @@ function hello() {
 		if (autoSaveInterval) clearInterval(autoSaveInterval);
 		autoSaveInterval = setInterval(() => {
 			if (markdownText && saveStatus !== 'saving') {
-				console.log('자동 저장 실행 중...');
 				saveToLocal();
 			}
 		}, 5 * 60 * 1000); // Auto-save every 5 minutes
@@ -256,7 +322,7 @@ function hello() {
 				document.getElementById('file-input')?.click();
 			}
 		} catch (error) {
-			console.log('파일 선택이 취소되었습니다.');
+			// 파일 선택 취소 시 아무 처리 없음
 		}
 	}
 
@@ -286,7 +352,7 @@ function hello() {
 				downloadMarkdown();
 			}
 		} catch (error) {
-			console.log('파일 저장이 취소되었습니다.');
+			// 파일 저장 취소 시 아무 처리 없음
 		}
 	}
 
@@ -334,44 +400,337 @@ function hello() {
 		}
 	}
 
-	// ===== SCROLL SYNCHRONIZATION =====
-	function toggleScrollSync() {
-		isScrollSyncEnabled = !isScrollSyncEnabled;
+	// ===== TIPTAP IMAGE INSERTION =====
+	async function insertImageToTiptap(file: File) {
+		if (!tiptapEditor) return;
+
+		if (!file.type.startsWith('image/')) {
+			toastStore.show('이미지 파일만 업로드할 수 있습니다.', 'error');
+			return;
+		}
+		if (file.size > 5 * 1024 * 1024) {
+			toastStore.show('이미지 크기는 5MB 이하로 제한됩니다.', 'warning');
+			return;
+		}
+
+		try {
+			// 이미지 압축 (최대 1280px 폭으로 리사이즈, JPEG 85% 품질)
+			const base64 = await compressImageToBase64(file);
+			tiptapEditor.chain().focus().setImage({ src: base64, alt: file.name }).run();
+			toastStore.show('이미지가 추가되었습니다!', 'success');
+		} catch (error) {
+			console.error('이미지 삽입 실패:', error);
+			toastStore.show('이미지 삽입에 실패했습니다.', 'error');
+		}
 	}
 
+	async function compressImageToBase64(file: File): Promise<string> {
+		return new Promise((resolve, reject) => {
+			const img = new window.Image();
+			const objectUrl = URL.createObjectURL(file);
+
+			img.onload = () => {
+				URL.revokeObjectURL(objectUrl);
+				const MAX_WIDTH = 1280;
+				const scale = img.width > MAX_WIDTH ? MAX_WIDTH / img.width : 1;
+				const canvas = document.createElement('canvas');
+				canvas.width = Math.round(img.width * scale);
+				canvas.height = Math.round(img.height * scale);
+				const ctx = canvas.getContext('2d');
+				if (!ctx) { reject(new Error('canvas context 없음')); return; }
+				ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+
+				// PNG는 PNG로, 나머지는 JPEG로
+				const mimeType = file.type === 'image/png' ? 'image/png' : 'image/jpeg';
+				const quality = mimeType === 'image/jpeg' ? 0.85 : undefined;
+				resolve(canvas.toDataURL(mimeType, quality));
+			};
+			img.onerror = reject;
+			img.src = objectUrl;
+		});
+	}
+
+	// ===== 이미지 리사이즈 NodeView =====
+	function createResizableImageNodeView({ node, getPos, editor }: any) {
+		// 컨테이너
+		const wrapper = document.createElement('div');
+		wrapper.className = 'image-wrapper';
+		wrapper.setAttribute('draggable', 'true');
+
+		// 이미지
+		const img = document.createElement('img');
+		img.src = node.attrs.src;
+		img.alt = node.attrs.alt || '';
+		img.className = 'tiptap-image';
+		if (node.attrs.width) img.style.width = typeof node.attrs.width === 'number' ? node.attrs.width + 'px' : node.attrs.width;
+
+		// 왼쪽 핸들
+		const handleLeft = document.createElement('div');
+		handleLeft.className = 'resize-handle resize-handle-left';
+
+		// 오른쪽 핸들
+		const handleRight = document.createElement('div');
+		handleRight.className = 'resize-handle resize-handle-right';
+
+		wrapper.appendChild(img);
+		wrapper.appendChild(handleLeft);
+		wrapper.appendChild(handleRight);
+
+		// 리사이즈 로직
+		function makeResizer(direction: 'left' | 'right') {
+			return (e: MouseEvent) => {
+				e.preventDefault();
+				e.stopPropagation();
+				const startX = e.clientX;
+				const startWidth = img.offsetWidth;
+
+				function onMove(e: MouseEvent) {
+					const dx = e.clientX - startX;
+					const newWidth = direction === 'right'
+						? Math.max(80, startWidth + dx)
+						: Math.max(80, startWidth - dx);
+					img.style.width = newWidth + 'px';
+				}
+
+				function onUp() {
+					document.removeEventListener('mousemove', onMove);
+					document.removeEventListener('mouseup', onUp);
+					// 변경된 너비를 노드 attrs에 저장
+					if (typeof getPos === 'function') {
+						(editor as Editor).chain()
+							.setNodeSelection(getPos())
+							.updateAttributes('image', { width: img.style.width })
+							.run();
+					}
+				}
+
+				document.addEventListener('mousemove', onMove);
+				document.addEventListener('mouseup', onUp);
+			};
+		}
+
+		handleLeft.addEventListener('mousedown', makeResizer('left'));
+		handleRight.addEventListener('mousedown', makeResizer('right'));
+
+		return {
+			dom: wrapper,
+			update: (updatedNode: any) => {
+				if (updatedNode.type.name !== 'image') return false;
+				img.src = updatedNode.attrs.src;
+				img.alt = updatedNode.attrs.alt || '';
+				if (updatedNode.attrs.width) {
+					img.style.width = typeof updatedNode.attrs.width === 'number'
+						? updatedNode.attrs.width + 'px'
+						: updatedNode.attrs.width;
+				}
+				return true;
+			},
+			selectNode: () => { wrapper.classList.add('image-selected'); },
+			deselectNode: () => { wrapper.classList.remove('image-selected'); },
+			stopEvent: (event: Event) => {
+				// mousedown on resize handles: stop propagation to editor
+				return (event.target as Element)?.classList?.contains('resize-handle');
+			},
+		};
+	}
+
+	// ===== TIPTAP EDITOR =====
+	function initTiptap() {
+		if (!browser || !editorContainer) return;
+		if (tiptapEditor) return; // already initialized
+
+		tiptapEditor = new Editor({
+			element: editorContainer,
+			extensions: [
+				StarterKit,
+				TextStyle,
+				Color,
+				Highlight.configure({ multicolor: true }),
+				Underline,
+				Image.extend({
+					addAttributes() {
+						return {
+							...this.parent?.(),
+							width: { default: null, parseHTML: (el: HTMLElement) => el.getAttribute('width') || (el as HTMLElement).style.width || null },
+						};
+					},
+					addNodeView() {
+						return (props: any) => createResizableImageNodeView({ ...props, editor: this.editor });
+					},
+				}).configure({ allowBase64: true }),
+				Link.configure({
+					openOnClick: false,
+					HTMLAttributes: {
+						class: 'tiptap-link',
+						rel: 'noopener noreferrer',
+						target: '_blank',
+					},
+					autolink: true,
+				}),
+				MarkdownExt.configure({
+					html: false,
+					transformPastedText: true,
+					transformCopiedText: true,
+				}),
+				BubbleMenuExt.configure({
+					element: bubbleMenuElement,
+					tippyOptions: { duration: 100 },
+					shouldShow: ({ state }) => {
+						const { selection } = state;
+						// NodeSelection(이미지 등 블록 선택)이면 표시 안 함
+						if (selection.constructor.name === 'NodeSelection') return false;
+						// 텍스트가 실제로 선택된 경우에만 표시
+						const { from, to } = selection;
+						return from !== to;
+					},
+				}),
+				TiptapTable.configure({ resizable: false }),
+				TableRowExt,
+				TableHeaderExt,
+				TableCellExt,
+				TaskList,
+				TaskItem.configure({ nested: true }),
+				BubbleMenuExt.configure({
+					element: tableBubbleMenuElement,
+					tippyOptions: { duration: 100 },
+					shouldShow: ({ editor }) => editor.isActive('table'),
+				}),
+				Placeholder.configure({
+					placeholder: '여기를 클릭하여 작성을 시작하세요... (/ 를 입력하면 블록을 추가할 수 있어요)',
+				}),
+			],
+			content: markdownText,
+			onUpdate: ({ editor }) => {
+				// Tiptap → markdownText 동기화
+				const md = (editor.storage as any).markdown.getMarkdown();
+				if (md !== markdownText) {
+					markdownText = md;
+				}
+			},
+			editorProps: {
+				attributes: {
+					class: 'tiptap-editor-content',
+				},
+				handleKeyDown: (view, event) => {
+					// "/" 입력 시 slash command 메뉴 표시
+					if (event.key === '/') {
+						const { state } = view;
+						const selFrom = state.selection.$from;
+						const isEmptyParagraph = selFrom.node().type.name === 'paragraph' && selFrom.node().textContent === '';
+						if (isEmptyParagraph) {
+							const coords = view.coordsAtPos(selFrom.pos);
+							const containerRect = editorContainer?.getBoundingClientRect();
+							slashMenuPos = {
+								x: coords.left - (containerRect?.left ?? 0),
+								y: coords.bottom - (containerRect?.top ?? 0) + 8
+							};
+							slashMenuFilter = '';
+							slashMenuVisible = true;
+							return false; // "/" 문자는 그대로 입력되도록 허용
+						}
+					}
+					// 슬래시 메뉴가 열려 있을 때
+					if (slashMenuVisible) {
+						if (event.key === 'Escape') {
+							slashMenuVisible = false;
+							// "/" 삭제
+							view.dispatch(view.state.tr.delete(view.state.selection.from - 1, view.state.selection.from));
+							return true;
+						}
+						if (event.key === 'Backspace') {
+							slashMenuVisible = false;
+							return false;
+						}
+					}
+					return false;
+				},
+				handleDOMEvents: {
+					drop: (view, event) => {
+						const files = Array.from((event as DragEvent).dataTransfer?.files || []);
+						const imageFiles = files.filter(f => f.type.startsWith('image/'));
+						if (imageFiles.length === 0) return false;
+
+						event.preventDefault();
+
+						imageFiles.forEach(file => {
+							insertImageToTiptap(file);
+						});
+						return true;
+					},
+					paste: (view, event) => {
+						const items = Array.from((event as ClipboardEvent).clipboardData?.items || []);
+						const imageItem = items.find(item => item.type.startsWith('image/'));
+						if (!imageItem) return false;
+
+						event.preventDefault();
+						const file = imageItem.getAsFile();
+						if (file) insertImageToTiptap(file);
+						return true;
+					},
+				},
+			},
+		});
+	}
+
+	function destroyTiptap() {
+		if (tiptapEditor) {
+			tiptapEditor.destroy();
+			tiptapEditor = null;
+		}
+	}
+
+	function handleLinkToggle() {
+		if (!tiptapEditor) return;
+		if (tiptapEditor.isActive('link')) {
+			tiptapEditor.chain().focus().unsetLink().run();
+		} else {
+			const url = window.prompt('링크 URL을 입력하세요:', 'https://');
+			if (url && url !== 'https://') {
+				tiptapEditor.chain().focus().setLink({ href: url }).run();
+			}
+		}
+	}
+
+	// ===== SLASH COMMAND =====
+	function executeSlashCommand(action: () => void) {
+		if (!tiptapEditor) return;
+		// "/" 문자 삭제 후 명령 실행
+		const { from } = tiptapEditor.state.selection;
+		tiptapEditor.chain()
+			.focus()
+			.deleteRange({ from: from - 1, to: from })
+			.run();
+		action();
+		slashMenuVisible = false;
+	}
+
+	const slashCommands = [
+		{ label: '제목 1', icon: 'H1', action: () => tiptapEditor?.chain().focus().toggleHeading({ level: 1 }).run() },
+		{ label: '제목 2', icon: 'H2', action: () => tiptapEditor?.chain().focus().toggleHeading({ level: 2 }).run() },
+		{ label: '제목 3', icon: 'H3', action: () => tiptapEditor?.chain().focus().toggleHeading({ level: 3 }).run() },
+		{ label: '글머리 기호', icon: '•', action: () => tiptapEditor?.chain().focus().toggleBulletList().run() },
+		{ label: '번호 목록', icon: '1.', action: () => tiptapEditor?.chain().focus().toggleOrderedList().run() },
+		{ label: '체크리스트', icon: '☑', action: () => tiptapEditor?.chain().focus().toggleTaskList().run() },
+		{ label: '코드 블록', icon: '</>', action: () => tiptapEditor?.chain().focus().toggleCodeBlock().run() },
+		{ label: '인용구', icon: '❝', action: () => tiptapEditor?.chain().focus().toggleBlockquote().run() },
+		{ label: '표 삽입', icon: '⊞', action: () => {
+			const input = window.prompt('표 크기 (행×열, 예: 3x3)', '3x3');
+			if (!input) return;
+			const match = input.match(/^(\d+)[x×](\d+)$/i);
+			const rows = match ? Math.max(1, parseInt(match[1])) : 3;
+			const cols = match ? Math.max(1, parseInt(match[2])) : 3;
+			tiptapEditor?.chain().focus().insertTable({ rows, cols, withHeaderRow: true }).run();
+		}},
+		{ label: '구분선', icon: '—', action: () => tiptapEditor?.chain().focus().setHorizontalRule().run() },
+	];
+
+	$: filteredSlashCommands = slashCommands.filter(cmd =>
+		cmd.label.toLowerCase().includes(slashMenuFilter.toLowerCase())
+	);
+
+	// ===== VIEW MODE =====
 	function toggleMobileMenu() {
 		showMobileMenu = !showMobileMenu;
-	}
-
-	function syncEditorScroll(event: Event) {
-		if (!isScrollSyncEnabled || isScrolling || !previewElement) return;
-		
-		const editor = event.target as HTMLTextAreaElement;
-		const scrollPercent = editor.scrollTop / (editor.scrollHeight - editor.clientHeight);
-		
-		isScrolling = true;
-		previewElement.scrollTop = scrollPercent * (previewElement.scrollHeight - previewElement.clientHeight);
-		
-		setTimeout(() => {
-			isScrolling = false;
-		}, 50);
-	}
-
-	function syncPreviewScroll(event: Event) {
-		if (!isScrollSyncEnabled || isScrolling) return;
-		
-		const preview = event.target as HTMLDivElement;
-		const editorTextarea = document.querySelector('.editor') as HTMLTextAreaElement;
-		if (!editorTextarea) return;
-		
-		const scrollPercent = preview.scrollTop / (preview.scrollHeight - preview.clientHeight);
-		
-		isScrolling = true;
-		editorTextarea.scrollTop = scrollPercent * (editorTextarea.scrollHeight - editorTextarea.clientHeight);
-		
-		setTimeout(() => {
-			isScrolling = false;
-		}, 50);
 	}
 
 	// ===== EXPORT FUNCTIONS =====
@@ -393,99 +752,6 @@ function hello() {
 		closeExportDropdown();
 	}
 
-	// ===== IMAGE INSERTION =====
-	function convertImageToBase64(file: File): Promise<string> {
-		return new Promise((resolve, reject) => {
-			const reader = new FileReader();
-			reader.onload = () => resolve(reader.result as string);
-			reader.onerror = reject;
-			reader.readAsDataURL(file);
-		});
-	}
-
-	function insertImageAtCursor(imageMarkdown: string) {
-		const textarea = document.querySelector('.editor') as HTMLTextAreaElement;
-		if (!textarea) return;
-
-		const start = textarea.selectionStart;
-		const end = textarea.selectionEnd;
-		const before = markdownText.substring(0, start);
-		const after = markdownText.substring(end);
-		
-		markdownText = before + imageMarkdown + after;
-		
-		// Move cursor to after the image markdown
-		setTimeout(() => {
-			textarea.focus();
-			const newPosition = start + imageMarkdown.length;
-			textarea.setSelectionRange(newPosition, newPosition);
-		}, 50);
-	}
-
-	async function handleImageUpload(file: File) {
-		try {
-			if (!file.type.startsWith('image/')) {
-				toastStore.show('이미지 파일만 업로드할 수 있습니다.', 'error');
-				return;
-			}
-
-			if (file.size > 5 * 1024 * 1024) { // 5MB limit
-				toastStore.show('이미지 크기는 5MB 이하로 제한됩니다.', 'warning');
-				return;
-			}
-
-			const base64 = await convertImageToBase64(file);
-			const fileName = file.name.replace(/\s+/g, '_'); // Replace spaces with underscores
-			const imageMarkdown = `\n![${fileName}](${base64})\n`;
-			
-			insertImageAtCursor(imageMarkdown);
-			toastStore.show('이미지가 추가되었습니다!', 'success');
-		} catch (error) {
-			console.error('이미지 업로드 실패:', error);
-			toastStore.show('이미지 업로드에 실패했습니다.', 'error');
-		}
-	}
-
-	function handleDragOver(event: DragEvent) {
-		event.preventDefault();
-		event.dataTransfer!.dropEffect = 'copy';
-		isDragOverImage = true;
-	}
-
-	function handleDragLeave() {
-		isDragOverImage = false;
-	}
-
-	async function handleDrop(event: DragEvent) {
-		event.preventDefault();
-		isDragOverImage = false;
-		
-		const files = Array.from(event.dataTransfer?.files || []);
-		const imageFiles = files.filter(file => file.type.startsWith('image/'));
-
-		if (imageFiles.length === 0) {
-			toastStore.show('이미지 파일을 드롭해주세요.', 'warning');
-			return;
-		}
-
-		for (const file of imageFiles) {
-			await handleImageUpload(file);
-		}
-	}
-
-	async function handlePaste(event: ClipboardEvent) {
-		const items = Array.from(event.clipboardData?.items || []);
-		const imageItem = items.find(item => item.type.startsWith('image/'));
-		
-		if (imageItem) {
-			event.preventDefault();
-			const file = imageItem.getAsFile();
-			if (file) {
-				await handleImageUpload(file);
-			}
-		}
-	}
-
 	function openImagePicker() {
 		const input = document.createElement('input');
 		input.type = 'file';
@@ -494,20 +760,25 @@ function hello() {
 		input.onchange = async (e) => {
 			const files = Array.from((e.target as HTMLInputElement).files || []);
 			for (const file of files) {
-				await handleImageUpload(file);
+				await insertImageToTiptap(file);
 			}
 		};
 		input.click();
 	}
 
 	async function downloadPDF() {
-		if (!previewElement || !browser) return;
+		if (!browser) return;
 
 		try {
 			saveStatus = 'saving';
-			
-			// Get the preview content
-			const previewContent = previewElement.innerHTML;
+
+			// Get the rendered HTML content — always render from markdownText source of truth
+			// (in document mode, Tiptap manages DOM so we re-render from markdown)
+			if (tiptapEditor) {
+				markdownText = (tiptapEditor.storage as any).markdown.getMarkdown();
+			}
+			const rawHtml = marked(markdownText);
+			const previewContent = browser ? DOMPurify.sanitize(typeof rawHtml === 'string' ? rawHtml : String(rawHtml)) : String(rawHtml);
 			
 			// Create a new window for printing
 			const printWindow = window.open('', '_blank');
@@ -619,28 +890,226 @@ function hello() {
 		}
 	}
 
-	// ===== SPLITTER RESIZE HANDLING =====
-	function handleMouseDown(event: MouseEvent) {
-		if (event.target === splitterElement) {
-			isDragging = true;
-			event.preventDefault();
-		}
-	}
+	// ===== DOCX EXPORT =====
+	async function exportAsDocx() {
+		try {
+			saveStatus = 'saving';
 
-	function handleMouseMove(event: MouseEvent) {
-		if (!isDragging || !mainElement) return;
-		
-		const rect = mainElement.getBoundingClientRect();
-		const newWidth = ((event.clientX - rect.left) / rect.width) * 100;
-		
-		// Limit width between 20% and 80%
-		if (newWidth >= 20 && newWidth <= 80) {
-			editorWidth = newWidth;
-		}
-	}
+			// Parse markdown into tokens
+			const tokens = marked.lexer(markdownText);
+			const children: any[] = [];
 
-	function handleMouseUp() {
-		isDragging = false;
+			// Helper function to convert HTML back to markdown for parsing
+			function htmlToMarkdown(html: string): string {
+				return html
+					.replace(/<strong>(.*?)<\/strong>/g, '**$1**')
+					.replace(/<b>(.*?)<\/b>/g, '**$1**')
+					.replace(/<em>(.*?)<\/em>/g, '*$1*')
+					.replace(/<i>(.*?)<\/i>/g, '*$1*')
+					.replace(/<code>(.*?)<\/code>/g, '`$1`')
+					.replace(/<[^>]*>/g, ''); // Remove remaining HTML tags
+			}
+
+			// Helper function to parse inline text (bold, italic, links, etc.)
+			function parseInlineText(text: string): TextRun[] {
+				const runs: TextRun[] = [];
+
+				// Simple regex patterns for inline formatting
+				const boldPattern = /\*\*(.+?)\*\*/g;
+				const italicPattern = /\*(.+?)\*/g;
+				const codePattern = /`(.+?)`/g;
+
+				let lastIndex = 0;
+				let segments: {text: string, bold?: boolean, italic?: boolean, code?: boolean}[] = [];
+
+				// Split by bold
+				let match;
+				let tempText = text;
+
+				// Extract bold text
+				while ((match = boldPattern.exec(text)) !== null) {
+					const before = text.substring(lastIndex, match.index);
+					if (before) segments.push({text: before});
+					segments.push({text: match[1], bold: true});
+					lastIndex = match.index + match[0].length;
+				}
+				const remaining = text.substring(lastIndex);
+				if (remaining) segments.push({text: remaining});
+
+				// Process each segment for italic and code
+				const finalRuns: TextRun[] = [];
+				for (const seg of segments) {
+					if (seg.bold) {
+						finalRuns.push(new TextRun({text: seg.text, bold: true}));
+					} else {
+						// Check for italic and code in non-bold segments
+						const italicMatches = seg.text.match(italicPattern);
+						const codeMatches = seg.text.match(codePattern);
+
+						if (italicMatches || codeMatches) {
+							// For simplicity, just handle basic cases
+							const parts = seg.text.split(/(\*[^*]+\*|`[^`]+`)/);
+							for (const part of parts) {
+								if (part.startsWith('*') && part.endsWith('*') && part.length > 2) {
+									finalRuns.push(new TextRun({text: part.slice(1, -1), italics: true}));
+								} else if (part.startsWith('`') && part.endsWith('`') && part.length > 2) {
+									finalRuns.push(new TextRun({text: part.slice(1, -1), font: 'Courier New'}));
+								} else if (part) {
+									finalRuns.push(new TextRun({text: part}));
+								}
+							}
+						} else {
+							finalRuns.push(new TextRun({text: seg.text}));
+						}
+					}
+				}
+
+				return finalRuns.length > 0 ? finalRuns : [new TextRun({text: text})];
+			}
+
+			// Process tokens
+			for (const token of tokens) {
+				switch (token.type) {
+					case 'heading':
+						const headingLevels = [HeadingLevel.HEADING_1, HeadingLevel.HEADING_2, HeadingLevel.HEADING_3, HeadingLevel.HEADING_4, HeadingLevel.HEADING_5, HeadingLevel.HEADING_6];
+						const headingRuns = parseInlineText(token.text);
+						children.push(new Paragraph({
+							children: headingRuns,
+							heading: headingLevels[token.depth - 1] || HeadingLevel.HEADING_1,
+							spacing: { before: 200, after: 100 }
+						}));
+						break;
+
+					case 'paragraph':
+						const runs = parseInlineText(token.text);
+						children.push(new Paragraph({
+							children: runs,
+							spacing: { after: 100 }
+						}));
+						break;
+
+					case 'list':
+						const listItems = token.items || [];
+						for (const item of listItems) {
+							const cellText = htmlToMarkdown(item.text);
+							const runs = parseInlineText(cellText);
+							children.push(new Paragraph({
+								children: runs,
+								bullet: token.ordered ? undefined : { level: 0 },
+								numbering: token.ordered ? { reference: 'default-numbering', level: 0 } : undefined,
+								spacing: { after: 50 }
+							}));
+						}
+						break;
+
+					case 'table':
+						if (token.header && token.rows) {
+							const tableRows: TableRow[] = [];
+
+							// Header row
+							const headerCells = token.header.map((cell: any) => {
+								const cellText = htmlToMarkdown(cell.text);
+								const runs = parseInlineText(cellText);
+								return new TableCell({
+									children: [new Paragraph({
+										children: runs,
+										alignment: AlignmentType.CENTER
+									})],
+									shading: { fill: 'E8E8E8' },
+									width: { size: 100 / token.header.length, type: WidthType.PERCENTAGE }
+								});
+							});
+							tableRows.push(new TableRow({ children: headerCells }));
+
+							// Data rows
+							for (const row of token.rows) {
+								const cells = row.map((cell: any) => {
+									const cellText = htmlToMarkdown(cell.text);
+									const runs = parseInlineText(cellText);
+									return new TableCell({
+										children: [new Paragraph({
+											children: runs
+										})],
+										width: { size: 100 / row.length, type: WidthType.PERCENTAGE }
+									});
+								});
+								tableRows.push(new TableRow({ children: cells }));
+							}
+
+							children.push(new Table({
+								rows: tableRows,
+								width: { size: 100, type: WidthType.PERCENTAGE },
+								borders: {
+									top: { style: BorderStyle.SINGLE, size: 1 },
+									bottom: { style: BorderStyle.SINGLE, size: 1 },
+									left: { style: BorderStyle.SINGLE, size: 1 },
+									right: { style: BorderStyle.SINGLE, size: 1 },
+									insideHorizontal: { style: BorderStyle.SINGLE, size: 1 },
+									insideVertical: { style: BorderStyle.SINGLE, size: 1 }
+								}
+							}));
+						}
+						break;
+
+					case 'code':
+						children.push(new Paragraph({
+							text: token.text,
+							style: 'code',
+							spacing: { before: 100, after: 100 }
+						}));
+						break;
+
+					case 'blockquote':
+						const quoteText = htmlToMarkdown(token.text);
+						const quoteRuns = parseInlineText(quoteText);
+						children.push(new Paragraph({
+							children: quoteRuns,
+							indent: { left: 720 }, // 0.5 inch
+							spacing: { before: 100, after: 100 }
+						}));
+						break;
+
+					case 'space':
+						children.push(new Paragraph({ text: '' }));
+						break;
+				}
+			}
+
+			// Create document
+			const doc = new Document({
+				sections: [{
+					properties: {},
+					children: children
+				}],
+				numbering: {
+					config: [{
+						reference: 'default-numbering',
+						levels: [
+							{
+								level: 0,
+								format: 'decimal',
+								text: '%1.',
+								alignment: AlignmentType.LEFT
+							}
+						]
+					}]
+				}
+			});
+
+			// Generate and download
+			const blob = await Packer.toBlob(doc);
+			const docxFileName = currentFileName.replace(/\.md$/, '') + '.docx';
+			saveAs(blob, docxFileName);
+
+			toastStore.show(`${docxFileName} 다운로드 완료`, 'success');
+			saveStatus = 'saved';
+			closeExportDropdown();
+
+		} catch (error) {
+			console.error('DOCX 생성 중 오류:', error);
+			toastStore.show('DOCX 생성 중 오류가 발생했습니다: ' + (error instanceof Error ? error.message : String(error)), 'error');
+			saveStatus = 'saved';
+		}
 	}
 
 	onMount(() => {
@@ -648,11 +1117,9 @@ function hello() {
 		loadFromLocal(); // Check saved content on page load
 		startAutoSave(); // Start auto-save with 5-minute interval
 		themeStore.init(); // Initialize theme
-		
-		// Add global event listeners for mouse events
-		document.addEventListener('mousemove', handleMouseMove);
-		document.addEventListener('mouseup', handleMouseUp);
-		
+		// Initialize Tiptap for the default document mode
+		setTimeout(() => initTiptap(), 50);
+
 		// Handle Ctrl+S to save to localStorage
 		const handleKeydown = (e: KeyboardEvent) => {
 			if ((e.ctrlKey || e.metaKey) && e.key === 's') {
@@ -674,21 +1141,23 @@ function hello() {
 				showShortcutsModal = false;
 			}
 		};
-		
+
 		// Close dropdown when clicking outside
 		const handleClickOutside = (event: MouseEvent) => {
 			const target = event.target as Element;
 			if (!target.closest('.export-dropdown')) {
 				showExportDropdown = false;
 			}
+			if (!target.closest('.bubble-color-group')) {
+				showColorPicker = false;
+				showHighlightPicker = false;
+			}
 		};
-		
+
 		document.addEventListener('keydown', handleKeydown);
 		document.addEventListener('click', handleClickOutside);
 
 		return () => {
-			document.removeEventListener('mousemove', handleMouseMove);
-			document.removeEventListener('mouseup', handleMouseUp);
 			document.removeEventListener('keydown', handleKeydown);
 			document.removeEventListener('click', handleClickOutside);
 			stopAutoSave(); // Cleanup auto-save on component unmount
@@ -699,7 +1168,7 @@ function hello() {
 	let previousText = markdownText;
 	
 	$: if (markdownText !== undefined) {
-		updatePreview();
+		schedulePreviewUpdate();
 		// Only change to unsaved if text actually changed and currently saved
 		if (markdownText !== previousText && saveStatus === 'saved') {
 			saveStatus = 'unsaved';
@@ -709,10 +1178,12 @@ function hello() {
 	
 	// Cleanup function to prevent memory leaks
 	onDestroy(() => {
+		destroyTiptap();
 		// Clear imageMap on component destruction
 		imageMap.clear();
-		// Clear debounce timer
+		// Clear debounce timers
 		if (debounceTimer) clearTimeout(debounceTimer);
+		if (previewDebounceTimer) clearTimeout(previewDebounceTimer);
 		// Stop any running intervals
 		stopAutoSave();
 	});
@@ -740,7 +1211,6 @@ function hello() {
 	<meta property="twitter:description" content="브라우저에서 바로 사용하는 무료 마크다운 에디터. 실시간 미리보기, 자동 저장, PDF 내보내기 지원." />
 	<meta property="twitter:image" content="https://easymd.netlify.app/og-image.png" />
 
-	<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github.min.css">
 </svelte:head>
 
 <Toast />
@@ -838,9 +1308,9 @@ function hello() {
 			{showMobileMenu ? '✕' : '☰'}
 		</button>
 		<div class="controls" class:mobile-open={showMobileMenu}>
-			<input 
-				type="file" 
-				accept=".md,.markdown" 
+			<input
+				type="file"
+				accept=".md,.markdown"
 				on:change={handleFileUpload}
 				id="file-input"
 				style="display: none;"
@@ -866,17 +1336,12 @@ function hello() {
 						<button on:click={exportAsPDF} class="dropdown-item">
 							📄 PDF 문서 (.pdf)
 						</button>
+						<button on:click={exportAsDocx} class="dropdown-item">
+							📘 한글 문서 (.docx)
+						</button>
 					</div>
 				{/if}
 			</div>
-			<button
-				on:click={toggleScrollSync}
-				class="sync-button"
-				class:active={isScrollSyncEnabled}
-				title="스크롤 연동 {isScrollSyncEnabled ? '끄기' : '켜기'}"
-			>
-				{isScrollSyncEnabled ? '📍' : '🔓'} 스크롤 연동
-			</button>
 			<button
 				on:click={() => themeStore.toggle()}
 				class="theme-button"
@@ -896,101 +1361,179 @@ function hello() {
 		</div>
 	</header>
 
-	<!-- Mobile Tab Switcher -->
-	<div class="mobile-tabs">
-		<button
-			class="mobile-tab"
-			class:active={mobileView === 'editor'}
-			on:click={() => mobileView = 'editor'}
-		>
-			✏️ 편집
-		</button>
-		<button
-			class="mobile-tab"
-			class:active={mobileView === 'preview'}
-			on:click={() => mobileView = 'preview'}
-		>
-			👁️ 미리보기
-		</button>
-	</div>
+	<main class="main">
+		<!-- Bubble Menu (텍스트 선택 시 표시) -->
+		<!-- svelte-ignore a11y-no-static-element-interactions -->
+		<div bind:this={bubbleMenuElement} class="bubble-menu">
+			<!-- 그룹 1: 기본 서식 -->
+			<!-- svelte-ignore a11y-click-events-have-key-events -->
+			<button on:click={() => tiptapEditor?.chain().focus().toggleBold().run()}
+					class:active={tiptapEditor?.isActive('bold')} title="굵게">
+				<strong>B</strong>
+			</button>
+			<!-- svelte-ignore a11y-click-events-have-key-events -->
+			<button on:click={() => tiptapEditor?.chain().focus().toggleItalic().run()}
+					class:active={tiptapEditor?.isActive('italic')} title="기울임">
+				<em>I</em>
+			</button>
+			<!-- svelte-ignore a11y-click-events-have-key-events -->
+			<button on:click={() => tiptapEditor?.chain().focus().toggleUnderline().run()}
+					class:active={tiptapEditor?.isActive('underline')} title="밑줄"
+					style="text-decoration: underline;">
+				U
+			</button>
+			<!-- svelte-ignore a11y-click-events-have-key-events -->
+			<button on:click={() => tiptapEditor?.chain().focus().toggleStrike().run()}
+					class:active={tiptapEditor?.isActive('strike')} title="취소선"
+					style="text-decoration: line-through;">
+				S
+			</button>
+			<!-- svelte-ignore a11y-click-events-have-key-events -->
+			<button on:click={() => tiptapEditor?.chain().focus().toggleCode().run()}
+					class:active={tiptapEditor?.isActive('code')} title="인라인 코드">
+				<code>`</code>
+			</button>
 
-	<main bind:this={mainElement} class="main" style="cursor: {isDragging ? 'col-resize' : 'default'}">
-		<div
-			class="editor-section"
-			class:mobile-hidden={mobileView !== 'editor'}
-			style="width: {editorWidth}%"
-		>
-			<h2>
-				에디터
-				{#if markdownText.includes('data:image')}
-					<span class="image-indicator">📷 긴 Base64 이미지 자동 축약</span>
+			<div class="bubble-separator"></div>
+
+			<!-- 그룹 2: 색상 -->
+			<!-- svelte-ignore a11y-no-static-element-interactions -->
+			<div class="bubble-color-group">
+				<!-- svelte-ignore a11y-click-events-have-key-events -->
+				<button
+					class="bubble-color-btn"
+					class:active={showColorPicker}
+					title="글자 색상"
+					on:click|stopPropagation={() => { showColorPicker = !showColorPicker; showHighlightPicker = false; }}
+				>
+					<span class="color-icon" style="border-bottom: 3px solid {tiptapEditor?.getAttributes('textStyle').color || '#ecf0f1'};">A</span>
+				</button>
+				{#if showColorPicker}
+					<!-- svelte-ignore a11y-no-static-element-interactions -->
+					<!-- svelte-ignore a11y-click-events-have-key-events -->
+					<div class="color-picker-popup" on:click|stopPropagation>
+						{#each TEXT_COLORS as color}
+							<!-- svelte-ignore a11y-click-events-have-key-events -->
+							<button
+								class="color-swatch"
+								style="background: {color.value || 'transparent'}; {color.value === '' ? 'border: 2px solid #ccc;' : ''}"
+								title={color.label}
+								on:click={() => {
+									if (color.value) {
+										tiptapEditor?.chain().focus().setColor(color.value).run();
+									} else {
+										tiptapEditor?.chain().focus().unsetColor().run();
+									}
+									showColorPicker = false;
+								}}
+							>
+								{#if color.value === ''}✕{/if}
+							</button>
+						{/each}
+					</div>
 				{/if}
-			</h2>
-			<textarea 
-				value={displayText}
-				on:input={(e) => {
-					const newValue = e.currentTarget.value;
-					const base64ShortPattern = /!\[([^\]]*)\]\((data:image\/[^;]+;base64,)[^)]+\.\.\.[^)]+\) 📷\[\d+KB\]/g;
-					
-					// Check if there are compressed image patterns
-					let hasShortImages = false;
-					let restoreCount = 0;
-					
-					const restoredText = newValue.replace(base64ShortPattern, (match) => {
-						hasShortImages = true;
-						// Find original image in imageMap with proper error handling
-						const imageId = `img-${restoreCount}`;
-						const original = imageMap.get(imageId);
-						restoreCount++;
-						
-						if (!original) {
-							console.warn(`Failed to restore original image for ID: ${imageId}`);
-							// Return match as fallback, but this should not happen in normal usage
-							return match;
-						}
-						
-						return original;
-					});
-					
-					// Use restored text if compressed images were found, otherwise use as-is
-					markdownText = hasShortImages ? restoredText : newValue;
-				}}
-				placeholder="마크다운을 입력하세요..."
-				class="editor"
-				class:drag-over={isDragOverImage}
-				on:scroll={syncEditorScroll}
-				on:dragover={handleDragOver}
-				on:dragleave={handleDragLeave}
-				on:drop={handleDrop}
-				on:paste={handlePaste}
-			></textarea>
-		</div>
-		
-		<!-- svelte-ignore a11y-no-noninteractive-tabindex -->
-		<!-- svelte-ignore a11y-no-noninteractive-element-interactions -->
-		<div 
-			bind:this={splitterElement}
-			class="splitter"
-			on:mousedown={handleMouseDown}
-			role="separator"
-			aria-orientation="vertical"
-			tabindex="0"
-		></div>
-		
-		<div
-			class="preview-section"
-			class:mobile-hidden={mobileView !== 'preview'}
-			style="width: {100 - editorWidth}%"
-		>
-			<h2>미리보기</h2>
-			<div 
-				bind:this={previewElement}
-				class="preview"
-				on:scroll={syncPreviewScroll}
-			>
-				{@html renderedHtml}
 			</div>
+
+			<!-- svelte-ignore a11y-no-static-element-interactions -->
+			<div class="bubble-color-group">
+				<!-- svelte-ignore a11y-click-events-have-key-events -->
+				<button
+					class="bubble-color-btn"
+					class:active={showHighlightPicker}
+					title="글자 배경색"
+					on:click|stopPropagation={() => { showHighlightPicker = !showHighlightPicker; showColorPicker = false; }}
+				>
+					<span class="highlight-icon" style="background: {tiptapEditor?.getAttributes('highlight').color || 'transparent'};">H</span>
+				</button>
+				{#if showHighlightPicker}
+					<!-- svelte-ignore a11y-no-static-element-interactions -->
+					<!-- svelte-ignore a11y-click-events-have-key-events -->
+					<div class="color-picker-popup" on:click|stopPropagation>
+						{#each HIGHLIGHT_COLORS as color}
+							<!-- svelte-ignore a11y-click-events-have-key-events -->
+							<button
+								class="color-swatch"
+								style="background: {color.value || 'transparent'}; {color.value === '' ? 'border: 2px solid #ccc;' : ''}"
+								title={color.label}
+								on:click={() => {
+									if (color.value) {
+										tiptapEditor?.chain().focus().setHighlight({ color: color.value }).run();
+									} else {
+										tiptapEditor?.chain().focus().unsetHighlight().run();
+									}
+									showHighlightPicker = false;
+								}}
+							>
+								{#if color.value === ''}✕{/if}
+							</button>
+						{/each}
+					</div>
+				{/if}
+			</div>
+
+			<div class="bubble-separator"></div>
+
+			<!-- 그룹 3: 헤딩 -->
+			<!-- svelte-ignore a11y-click-events-have-key-events -->
+			<button on:click={() => tiptapEditor?.chain().focus().toggleHeading({level: 1}).run()}
+					class:active={tiptapEditor?.isActive('heading', {level: 1})}>H1</button>
+			<!-- svelte-ignore a11y-click-events-have-key-events -->
+			<button on:click={() => tiptapEditor?.chain().focus().toggleHeading({level: 2}).run()}
+					class:active={tiptapEditor?.isActive('heading', {level: 2})}>H2</button>
+			<!-- svelte-ignore a11y-click-events-have-key-events -->
+			<button on:click={() => tiptapEditor?.chain().focus().toggleHeading({level: 3}).run()}
+					class:active={tiptapEditor?.isActive('heading', {level: 3})}>H3</button>
+
+			<div class="bubble-separator"></div>
+
+			<!-- 그룹 4: 기타 -->
+			<!-- svelte-ignore a11y-click-events-have-key-events -->
+			<button on:click={() => tiptapEditor?.chain().focus().toggleBulletList().run()}
+					class:active={tiptapEditor?.isActive('bulletList')} title="글머리 기호">•</button>
+			<!-- svelte-ignore a11y-click-events-have-key-events -->
+			<button on:click={handleLinkToggle}
+					class:active={tiptapEditor?.isActive('link')} title="링크">🔗</button>
 		</div>
+
+		<!-- Table Bubble Menu (표 셀 안에 커서가 있을 때 표시) -->
+		<!-- svelte-ignore a11y-no-static-element-interactions -->
+		<div bind:this={tableBubbleMenuElement} class="table-bubble-menu">
+			<!-- svelte-ignore a11y-click-events-have-key-events -->
+			<button on:click={() => tiptapEditor?.chain().focus().addRowBefore().run()} title="위에 행 추가">↑행</button>
+			<!-- svelte-ignore a11y-click-events-have-key-events -->
+			<button on:click={() => tiptapEditor?.chain().focus().addRowAfter().run()} title="아래에 행 추가">↓행</button>
+			<!-- svelte-ignore a11y-click-events-have-key-events -->
+			<button on:click={() => tiptapEditor?.chain().focus().deleteRow().run()} title="행 삭제" class="danger">행✕</button>
+			<div class="bubble-separator"></div>
+			<!-- svelte-ignore a11y-click-events-have-key-events -->
+			<button on:click={() => tiptapEditor?.chain().focus().addColumnBefore().run()} title="왼쪽에 열 추가">←열</button>
+			<!-- svelte-ignore a11y-click-events-have-key-events -->
+			<button on:click={() => tiptapEditor?.chain().focus().addColumnAfter().run()} title="오른쪽에 열 추가">열→</button>
+			<!-- svelte-ignore a11y-click-events-have-key-events -->
+			<button on:click={() => tiptapEditor?.chain().focus().deleteColumn().run()} title="열 삭제" class="danger">열✕</button>
+			<div class="bubble-separator"></div>
+			<!-- svelte-ignore a11y-click-events-have-key-events -->
+			<button on:click={() => tiptapEditor?.chain().focus().deleteTable().run()} title="표 삭제" class="danger">표 삭제</button>
+		</div>
+
+		<!-- Slash Command Menu (/를 빈 줄에서 입력 시 표시) -->
+		{#if slashMenuVisible}
+			<!-- svelte-ignore a11y-no-static-element-interactions -->
+			<!-- svelte-ignore a11y-click-events-have-key-events -->
+			<div class="slash-menu" style="left: {slashMenuPos.x}px; top: {slashMenuPos.y}px;"
+				 on:mousedown|preventDefault>
+				<div class="slash-menu-header">블록 추가</div>
+				{#each filteredSlashCommands as cmd}
+					<button class="slash-menu-item" on:click={() => executeSlashCommand(cmd.action)}>
+						<span class="slash-menu-icon">{cmd.icon}</span>
+						<span>{cmd.label}</span>
+					</button>
+				{/each}
+			</div>
+		{/if}
+
+		<!-- Tiptap 에디터 컨테이너 -->
+		<div bind:this={editorContainer} class="document-view tiptap-container"></div>
 	</main>
 
 	<!-- Legal Footer -->
@@ -1197,29 +1740,6 @@ function hello() {
 		background: #2980b9;
 	}
 
-	.sync-button {
-		position: relative;
-		transition: all 0.3s ease;
-	}
-
-	.sync-button.active {
-		background: rgba(52, 152, 219, 0.8) !important;
-		border: 1px solid #3498db;
-		box-shadow: 0 0 8px rgba(52, 152, 219, 0.5);
-	}
-
-	.sync-button.active:hover {
-		background: rgba(52, 152, 219, 0.9) !important;
-	}
-
-	.sync-button:not(.active) {
-		background: rgba(231, 76, 60, 0.8) !important;
-		border: 1px solid #e74c3c;
-	}
-
-	.sync-button:not(.active):hover {
-		background: rgba(231, 76, 60, 0.9) !important;
-	}
 
 	.theme-button {
 		transition: all 0.3s ease;
@@ -1254,14 +1774,6 @@ function hello() {
 
 	.sponsor-button:active {
 		transform: translateY(0);
-	}
-
-	.image-indicator {
-		font-size: 0.75rem;
-		color: #7f8c8d;
-		margin-left: 1rem;
-		font-weight: normal;
-		opacity: 0.8;
 	}
 
 	.export-dropdown {
@@ -1330,117 +1842,52 @@ function hello() {
 	.main {
 		flex: 1;
 		display: flex;
-		min-height: 0;
-	}
-
-	.editor-section,
-	.preview-section {
-		display: flex;
 		flex-direction: column;
-		min-width: 0;
-		transition: width 0.1s ease;
-	}
-
-	.splitter {
-		width: 4px;
-		background: #ddd;
-		cursor: col-resize;
-		position: relative;
-		transition: background-color 0.2s;
-	}
-
-	.splitter:hover {
-		background: #3498db;
-	}
-
-	.splitter:active {
-		background: #2980b9;
-	}
-
-	.splitter::after {
-		content: '';
-		position: absolute;
-		top: 50%;
-		left: 50%;
-		transform: translate(-50%, -50%);
-		width: 2px;
-		height: 30px;
-		background: repeating-linear-gradient(
-			to bottom,
-			transparent 0px,
-			transparent 2px,
-			#999 2px,
-			#999 4px
-		);
-		opacity: 0.5;
-	}
-
-	.editor-section h2,
-	.preview-section h2 {
-		margin: 0;
-		padding: 1rem;
-		background: var(--bg-quaternary);
-		border-bottom: 1px solid var(--border-color);
-		font-size: 1rem;
-		font-weight: 600;
-		color: var(--text-header);
-		transition: background-color 0.3s, color 0.3s, border-color 0.3s;
-	}
-
-	.editor {
-		flex: 1;
-		border: none;
-		padding: 1rem;
-		font-family: 'Monaco', 'Menlo', monospace;
-		font-size: 14px;
-		line-height: 1.6;
-		resize: none;
-		outline: none;
-		background: var(--bg-tertiary);
-		color: var(--text-primary);
-		transition: all 0.3s ease;
-	}
-
-	.editor.drag-over {
-		border: 2px dashed #3498db;
-		background: #f8fbff;
-		box-shadow: 0 0 10px rgba(52, 152, 219, 0.3);
-	}
-
-	.preview {
-		flex: 1;
-		padding: 1rem;
-		background: var(--bg-secondary);
-		color: var(--text-secondary);
+		min-height: 0;
 		overflow-y: auto;
-		line-height: 1.6;
-		transition: background-color 0.3s, color 0.3s;
+		background: var(--bg-secondary);
 	}
 
-	/* Markdown styling */
-	.preview :global(h1),
-	.preview :global(h2),
-	.preview :global(h3),
-	.preview :global(h4),
-	.preview :global(h5),
-	.preview :global(h6) {
+	/* Document view (Notion-style) */
+	.document-view {
+		max-width: 800px;
+		margin: 0 auto;
+		padding: 40px 60px;
+		min-height: calc(100vh - 64px);
+		cursor: text;
+		font-size: 16px;
+		line-height: 1.8;
+		color: var(--text-secondary);
+		background: var(--bg-secondary);
+		transition: background-color 0.3s, color 0.3s;
+		width: 100%;
+		box-sizing: border-box;
+	}
+
+	/* Markdown styling for document-view */
+	.document-view :global(h1),
+	.document-view :global(h2),
+	.document-view :global(h3),
+	.document-view :global(h4),
+	.document-view :global(h5),
+	.document-view :global(h6) {
 		color: var(--text-header);
 		margin-top: 1.5em;
 		margin-bottom: 0.5em;
 		transition: color 0.3s;
 	}
 
-	.preview :global(h1) {
+	.document-view :global(h1) {
 		border-bottom: 2px solid #3498db;
 		padding-bottom: 0.3em;
 	}
 
-	.preview :global(h2) {
+	.document-view :global(h2) {
 		border-bottom: 1px solid #bdc3c7;
 		padding-bottom: 0.3em;
 	}
 
-	.preview :global(blockquote) {
+	.document-view :global(blockquote) {
 		border-left: 4px solid #3498db;
 		padding-left: 1rem;
 		margin: 1rem 0;
@@ -1450,7 +1897,7 @@ function hello() {
 		transition: background-color 0.3s, color 0.3s;
 	}
 
-	.preview :global(code) {
+	.document-view :global(code) {
 		background: var(--code-bg);
 		color: var(--code-text);
 		padding: 0.2em 0.4em;
@@ -1460,7 +1907,7 @@ function hello() {
 		transition: background-color 0.3s, color 0.3s;
 	}
 
-	.preview :global(pre) {
+	.document-view :global(pre) {
 		background: #2c3e50;
 		color: #ecf0f1;
 		padding: 1rem;
@@ -1469,46 +1916,51 @@ function hello() {
 		margin: 1rem 0;
 	}
 
-	.preview :global(pre code) {
+	.document-view :global(pre code) {
 		background: none;
 		padding: 0;
 		color: inherit;
 	}
 
-	.preview :global(table) {
+	.document-view :global(table) {
 		border-collapse: collapse;
 		width: 100%;
 		margin: 1rem 0;
 	}
 
-	.preview :global(th),
-	.preview :global(td) {
+	.document-view :global(th),
+	.document-view :global(td) {
 		border: 1px solid #ddd;
 		padding: 0.5rem;
 		text-align: left;
 	}
 
-	.preview :global(th) {
+	.document-view :global(th) {
 		background-color: #f8f9fa;
 		font-weight: 600;
 	}
 
-	.preview :global(a) {
+	.document-view :global(a) {
 		color: #3498db;
 		text-decoration: none;
 	}
 
-	.preview :global(a:hover) {
+	.document-view :global(a:hover) {
 		text-decoration: underline;
 	}
 
-	.preview :global(ul),
-	.preview :global(ol) {
+	.document-view :global(ul),
+	.document-view :global(ol) {
 		padding-left: 1.5rem;
 	}
 
-	.preview :global(li) {
+	.document-view :global(li) {
 		margin: 0.25rem 0;
+	}
+
+	.document-view :global(img) {
+		max-width: 100%;
+		height: auto;
 	}
 
 	/* Modal Styles */
@@ -1687,64 +2139,410 @@ function hello() {
 		text-align: center;
 	}
 
-	/* Mobile Tabs */
-	.mobile-tabs {
-		display: none;
-		background: var(--bg-header);
-		border-bottom: 1px solid var(--border-color);
-		padding: 0.5rem;
-		gap: 0.5rem;
+	/* ===== TIPTAP EDITOR STYLES ===== */
+	.tiptap-container {
+		cursor: text;
+		position: relative; /* slash menu 절대 위치 기준점 */
 	}
 
-	.mobile-tab {
-		flex: 1;
-		padding: 0.75rem 1rem;
-		background: var(--bg-secondary);
+	:global(.tiptap-editor-content) {
+		outline: none;
+		min-height: 100%;
+	}
+
+	/* Heading styles in Tiptap */
+	:global(.tiptap-editor-content h1) {
+		font-size: 2em;
+		font-weight: 700;
+		margin: 1.5em 0 0.5em;
+		border-bottom: 2px solid #3498db;
+		padding-bottom: 0.3em;
+		color: var(--text-header);
+	}
+	:global(.tiptap-editor-content h2) {
+		font-size: 1.5em;
+		font-weight: 600;
+		margin: 1.3em 0 0.4em;
+		border-bottom: 1px solid var(--border-color-light);
+		padding-bottom: 0.2em;
+		color: var(--text-header);
+	}
+	:global(.tiptap-editor-content h3) {
+		font-size: 1.25em;
+		font-weight: 600;
+		margin: 1.2em 0 0.3em;
+		color: var(--text-header);
+	}
+	:global(.tiptap-editor-content p) {
+		margin: 0.5em 0;
+	}
+	:global(.tiptap-editor-content ul),
+	:global(.tiptap-editor-content ol) {
+		padding-left: 1.5em;
+	}
+	:global(.tiptap-editor-content li) {
+		margin: 0.25em 0;
+	}
+	:global(.tiptap-editor-content code) {
+		background: var(--code-bg);
+		color: var(--code-text);
+		padding: 0.2em 0.4em;
+		border-radius: 3px;
+		font-family: 'Monaco', 'Menlo', monospace;
+		font-size: 0.9em;
+	}
+	:global(.tiptap-editor-content pre) {
+		background: #2c3e50;
+		color: #ecf0f1;
+		padding: 1em;
+		border-radius: 4px;
+		overflow-x: auto;
+		margin: 1rem 0;
+	}
+	:global(.tiptap-editor-content pre code) {
+		background: none;
+		padding: 0;
+		color: inherit;
+	}
+	:global(.tiptap-editor-content blockquote) {
+		border-left: 4px solid #3498db;
+		padding: 0.5rem 1rem;
+		margin: 1em 0;
+		color: var(--text-tertiary);
+		background: var(--blockquote-bg);
+	}
+	:global(.tiptap-editor-content table) {
+		border-collapse: collapse;
+		width: 100%;
+		margin: 1em 0;
+	}
+	:global(.tiptap-editor-content th),
+	:global(.tiptap-editor-content td) {
 		border: 1px solid var(--border-color);
-		border-radius: 6px;
-		color: var(--text-secondary);
-		font-size: 0.95rem;
-		font-weight: 500;
-		cursor: pointer;
-		transition: all 0.2s;
+		padding: 0.5em;
+		text-align: left;
+	}
+	:global(.tiptap-editor-content th) {
+		background: var(--table-header-bg);
+		font-weight: 600;
+	}
+	:global(.tiptap-editor-content hr) {
+		border: none;
+		border-top: 2px solid var(--border-color);
+		margin: 1.5em 0;
+	}
+	:global(.tiptap-editor-content a) {
+		color: #3498db;
+		text-decoration: none;
+	}
+	:global(.tiptap-editor-content a:hover) {
+		text-decoration: underline;
+	}
+	:global(.tiptap-editor-content img) {
+		max-width: 100%;
+		height: auto;
 	}
 
-	.mobile-tab:hover {
-		background: var(--bg-tertiary);
+	/* Tiptap 에디터 내 이미지 스타일 */
+	:global(.tiptap-image) {
+		max-width: 100%;
+		height: auto;
+		border-radius: 4px;
+		display: block;
+		margin: 0; /* wrapper가 margin을 처리 */
+		cursor: default;
+	}
+	:global(.tiptap-image.ProseMirror-selectednode) {
+		outline: 2px solid var(--accent-color, #667eea);
+		border-radius: 4px;
 	}
 
-	.mobile-tab.active {
-		background: #3498db;
+	/* 이미지 래퍼 */
+	:global(.image-wrapper) {
+		position: relative;
+		display: inline-block;
+		max-width: 100%;
+		margin: 1em 0;
+		line-height: 0;
+		cursor: default;
+	}
+
+	/* 이미지 선택 상태 */
+	:global(.image-wrapper.image-selected img) {
+		outline: 2px solid var(--accent-color, #667eea);
+		border-radius: 3px;
+	}
+	:global(.image-wrapper.image-selected .resize-handle) {
+		opacity: 1;
+		pointer-events: auto;
+	}
+
+	/* 리사이즈 핸들 */
+	:global(.resize-handle) {
+		position: absolute;
+		top: 50%;
+		transform: translateY(-50%);
+		width: 10px;
+		height: 40px;
+		background: var(--accent-color, #667eea);
+		border-radius: 4px;
+		cursor: ew-resize;
+		opacity: 0;
+		pointer-events: none;
+		transition: opacity 0.15s;
+		z-index: 10;
+	}
+	:global(.image-wrapper:hover .resize-handle),
+	:global(.image-wrapper.image-selected .resize-handle) {
+		opacity: 0.7;
+		pointer-events: auto;
+	}
+	:global(.resize-handle:hover) {
+		opacity: 1 !important;
+	}
+	:global(.resize-handle-left) {
+		left: -5px;
+	}
+	:global(.resize-handle-right) {
+		right: -5px;
+	}
+	:global(.tiptap-editor-content p.is-editor-empty:first-child::before) {
+		content: attr(data-placeholder);
+		float: left;
+		color: var(--text-tertiary);
+		pointer-events: none;
+		height: 0;
+	}
+
+	/* Bubble menu */
+	.bubble-menu {
+		display: flex;
+		align-items: center;
+		gap: 2px;
+		background: var(--bg-header, #2c3e50);
+		border-radius: 8px;
+		padding: 4px 6px;
+		box-shadow: 0 4px 16px rgba(0,0,0,0.2);
+		z-index: 100;
+		/* Tippy.js 초기화 전 DOM 노출 방지 — Tippy가 visibility를 직접 제어함 */
+		visibility: hidden;
+	}
+	.bubble-menu button {
+		background: transparent;
+		border: none;
 		color: white;
-		border-color: #3498db;
+		padding: 4px 8px;
+		border-radius: 4px;
+		cursor: pointer;
+		font-size: 13px;
+		transition: background 0.15s;
+	}
+	.bubble-menu button:hover,
+	.bubble-menu button.active {
+		background: rgba(255,255,255,0.2);
+	}
+	.bubble-separator {
+		width: 1px;
+		height: 18px;
+		background: rgba(255,255,255,0.3);
+		margin: 0 4px;
+	}
+
+
+	/* 색상 버튼 그룹 */
+	.bubble-color-group {
+		position: relative;
+	}
+	.bubble-color-btn {
+		background: transparent;
+		border: none;
+		color: white;
+		padding: 4px 7px;
+		border-radius: 4px;
+		cursor: pointer;
+		font-size: 14px;
+		font-weight: 700;
+		transition: background 0.15s;
+		display: flex;
+		align-items: center;
+	}
+	.bubble-color-btn:hover,
+	.bubble-color-btn.active {
+		background: rgba(255,255,255,0.2);
+	}
+	.color-icon {
+		display: inline-block;
+		line-height: 1;
+		padding-bottom: 1px;
+	}
+	.highlight-icon {
+		display: inline-block;
+		padding: 1px 3px;
+		border-radius: 2px;
+		line-height: 1;
+		min-width: 16px;
+		text-align: center;
+	}
+
+	/* 색상 팝업 */
+	.color-picker-popup {
+		position: absolute;
+		top: calc(100% + 8px);
+		left: 50%;
+		transform: translateX(-50%);
+		background: var(--bg-secondary, white);
+		border: 1px solid var(--border-color, #ddd);
+		border-radius: 8px;
+		padding: 8px;
+		box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+		display: flex;
+		flex-wrap: wrap;
+		gap: 5px;
+		width: 140px;
+		z-index: 300;
+		animation: slashFadeIn 0.1s ease;
+	}
+	.color-swatch {
+		width: 22px;
+		height: 22px;
+		border-radius: 4px;
+		border: 1px solid rgba(0,0,0,0.1);
+		cursor: pointer;
+		transition: transform 0.1s, box-shadow 0.1s;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		font-size: 10px;
+		color: #999;
+		padding: 0;
+	}
+	.color-swatch:hover {
+		transform: scale(1.2);
+		box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+	}
+	/* Slash Command Menu */
+	.slash-menu {
+		position: absolute;
+		z-index: 200;
+		display: flex;
+		flex-direction: column;
+		background: var(--bg-secondary, white);
+		border: 1px solid var(--border-color, #ddd);
+		border-radius: 10px;
+		padding: 6px;
+		box-shadow: 0 8px 24px rgba(0,0,0,0.14);
+		min-width: 200px;
+		max-height: 320px;
+		overflow-y: auto;
+		animation: slashFadeIn 0.12s ease;
+	}
+	@keyframes slashFadeIn {
+		from { opacity: 0; transform: translateY(-6px); }
+		to   { opacity: 1; transform: translateY(0); }
+	}
+	.slash-menu-header {
+		font-size: 11px;
+		font-weight: 600;
+		color: var(--text-tertiary, #999);
+		padding: 4px 10px 6px;
+		text-transform: uppercase;
+		letter-spacing: 0.05em;
+	}
+	.slash-menu-icon {
+		font-size: 12px;
+		font-weight: 700;
+		color: var(--text-tertiary, #888);
+		width: 26px;
+		text-align: center;
+		flex-shrink: 0;
+	}
+	.slash-menu-item {
+		display: flex;
+		align-items: center;
+		gap: 8px;
+		background: transparent;
+		border: none;
+		padding: 8px 10px;
+		border-radius: 4px;
+		cursor: pointer;
+		font-size: 14px;
+		color: var(--text-primary, #333);
+		text-align: left;
+		transition: background 0.15s;
+	}
+	.slash-menu-item:hover {
+		background: var(--bg-quaternary, #f5f5f5);
+	}
+
+	/* Table Bubble Menu */
+	.table-bubble-menu {
+		display: flex;
+		align-items: center;
+		gap: 2px;
+		background: var(--bg-header, #2c3e50);
+		border-radius: 8px;
+		padding: 4px 6px;
+		box-shadow: 0 4px 16px rgba(0,0,0,0.2);
+		z-index: 100;
+		visibility: hidden;
+	}
+	.table-bubble-menu button {
+		background: transparent;
+		border: none;
+		color: white;
+		padding: 4px 8px;
+		border-radius: 4px;
+		cursor: pointer;
+		font-size: 12px;
+		font-weight: 600;
+		transition: background 0.15s;
+		white-space: nowrap;
+	}
+	.table-bubble-menu button:hover {
+		background: rgba(255,255,255,0.2);
+	}
+	.table-bubble-menu button.danger:hover {
+		background: rgba(231, 76, 60, 0.6);
+	}
+
+	/* Task list styles */
+	:global(.tiptap-editor-content ul[data-type="taskList"]) {
+		list-style: none;
+		padding-left: 0.5em;
+	}
+	:global(.tiptap-editor-content ul[data-type="taskList"] li) {
+		display: flex;
+		align-items: flex-start;
+		gap: 0.5em;
+	}
+	:global(.tiptap-editor-content ul[data-type="taskList"] li > label) {
+		flex-shrink: 0;
+		margin-top: 0.15em;
+	}
+	:global(.tiptap-editor-content ul[data-type="taskList"] li > div) {
+		flex: 1;
+	}
+	:global(.tiptap-editor-content ul[data-type="taskList"] input[type="checkbox"]) {
+		cursor: pointer;
+		width: 15px;
+		height: 15px;
+		accent-color: #3498db;
+	}
+
+	/* Tiptap Link styles */
+	:global(.tiptap-link) {
+		color: var(--accent-color, #667eea);
+		text-decoration: underline;
+		cursor: pointer;
+	}
+	:global(.tiptap-link:hover) {
+		opacity: 0.8;
 	}
 
 	/* Responsive design */
 	@media (max-width: 768px) {
-		.mobile-tabs {
-			display: flex;
-		}
-
-		.mobile-hidden {
-			display: none !important;
-		}
-
-		.main {
-			flex-direction: column;
-		}
-
-		.splitter {
-			display: none;
-		}
-
-		.editor-section,
-		.preview-section {
-			width: 100% !important;
-			height: calc(100vh - 180px);
-		}
-
-		.editor-section {
-			border-bottom: none;
+		.document-view {
+			padding: 20px;
 		}
 
 		.mobile-menu-toggle {
