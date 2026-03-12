@@ -91,6 +91,14 @@ function hello() {
 	let slashMenuPos = { x: 0, y: 0 };
 	let slashMenuFilter = '';
 
+	// ===== TABLE PICKER STATE =====
+	let tablePickerVisible = false;
+	let tablePickerHover = { rows: 0, cols: 0 };
+
+	// ===== DOCUMENT WIDTH STATE =====
+	let documentWidth: 'normal' | 'wide' | 'full' = 'normal';
+	const WIDTH_MAP: Record<string, string> = { normal: '800px', wide: '1100px', full: '100%' };
+
 	// ===== COLOR PICKER STATE =====
 	let showColorPicker = false;
 	let showHighlightPicker = false;
@@ -658,14 +666,23 @@ function hello() {
 						return true;
 					},
 					paste: (view, event) => {
-						const items = Array.from((event as ClipboardEvent).clipboardData?.items || []);
+						const clipboardData = (event as ClipboardEvent).clipboardData;
+						const items = Array.from(clipboardData?.items || []);
 						const imageItem = items.find(item => item.type.startsWith('image/'));
-						if (!imageItem) return false;
-
-						event.preventDefault();
-						const file = imageItem.getAsFile();
-						if (file) insertImageToTiptap(file);
-						return true;
+						if (imageItem) {
+							event.preventDefault();
+							const file = imageItem.getAsFile();
+							if (file) insertImageToTiptap(file);
+							return true;
+						}
+						// Force plain-text path to avoid VS Code/editor HTML bleeding
+						const text = clipboardData?.getData('text/plain');
+						if (text) {
+							event.preventDefault();
+							view.pasteText(text);
+							return true;
+						}
+						return false;
 					},
 				},
 			},
@@ -714,12 +731,8 @@ function hello() {
 		{ label: '코드 블록', icon: '</>', action: () => tiptapEditor?.chain().focus().toggleCodeBlock().run() },
 		{ label: '인용구', icon: '❝', action: () => tiptapEditor?.chain().focus().toggleBlockquote().run() },
 		{ label: '표 삽입', icon: '⊞', action: () => {
-			const input = window.prompt('표 크기 (행×열, 예: 3x3)', '3x3');
-			if (!input) return;
-			const match = input.match(/^(\d+)[x×](\d+)$/i);
-			const rows = match ? Math.max(1, parseInt(match[1])) : 3;
-			const cols = match ? Math.max(1, parseInt(match[2])) : 3;
-			tiptapEditor?.chain().focus().insertTable({ rows, cols, withHeaderRow: true }).run();
+			tablePickerVisible = true;
+			tablePickerHover = { rows: 0, cols: 0 };
 		}},
 		{ label: '구분선', icon: '—', action: () => tiptapEditor?.chain().focus().setHorizontalRule().run() },
 	];
@@ -727,6 +740,24 @@ function hello() {
 	$: filteredSlashCommands = slashCommands.filter(cmd =>
 		cmd.label.toLowerCase().includes(slashMenuFilter.toLowerCase())
 	);
+
+	function insertTableFromPicker(rows: number, cols: number) {
+		if (!tiptapEditor) return;
+		const { from } = tiptapEditor.state.selection;
+		tiptapEditor.chain()
+			.focus()
+			.deleteRange({ from: from - 1, to: from })
+			.insertTable({ rows, cols, withHeaderRow: true })
+			.run();
+		tablePickerVisible = false;
+		slashMenuVisible = false;
+	}
+
+	function cycleDocumentWidth() {
+		const widths: Array<'normal' | 'wide' | 'full'> = ['normal', 'wide', 'full'];
+		const idx = widths.indexOf(documentWidth);
+		documentWidth = widths[(idx + 1) % widths.length];
+	}
 
 	// ===== VIEW MODE =====
 	function toggleMobileMenu() {
@@ -1342,6 +1373,9 @@ function hello() {
 					</div>
 				{/if}
 			</div>
+			<button on:click={cycleDocumentWidth} class="width-button" title="문서 너비 변경">
+				{documentWidth === 'normal' ? '↔ 보통' : documentWidth === 'wide' ? '↔ 넓게' : '↔ 전체'}
+			</button>
 			<button
 				on:click={() => themeStore.toggle()}
 				class="theme-button"
@@ -1522,18 +1556,52 @@ function hello() {
 			<!-- svelte-ignore a11y-click-events-have-key-events -->
 			<div class="slash-menu" style="left: {slashMenuPos.x}px; top: {slashMenuPos.y}px;"
 				 on:mousedown|preventDefault>
-				<div class="slash-menu-header">블록 추가</div>
-				{#each filteredSlashCommands as cmd}
-					<button class="slash-menu-item" on:click={() => executeSlashCommand(cmd.action)}>
-						<span class="slash-menu-icon">{cmd.icon}</span>
-						<span>{cmd.label}</span>
-					</button>
-				{/each}
+				{#if tablePickerVisible}
+					<div class="table-picker">
+						<div class="table-picker-label">
+							{tablePickerHover.rows > 0 ? `${tablePickerHover.rows} × ${tablePickerHover.cols}` : '크기 선택'}
+						</div>
+						<div class="table-picker-grid">
+							{#each {length: 6} as _, r}
+								<div class="table-picker-row">
+									{#each {length: 6} as _, c}
+										<!-- svelte-ignore a11y-click-events-have-key-events -->
+										<div
+											class="table-picker-cell"
+											class:highlighted={r < tablePickerHover.rows && c < tablePickerHover.cols}
+											on:mouseenter={() => tablePickerHover = { rows: r + 1, cols: c + 1 }}
+											on:click={() => insertTableFromPicker(r + 1, c + 1)}
+											role="button"
+											tabindex="0"
+										/>
+									{/each}
+								</div>
+							{/each}
+						</div>
+					</div>
+				{:else}
+					<div class="slash-menu-header">블록 추가</div>
+					{#each filteredSlashCommands as cmd}
+						{#if cmd.label === '표 삽입'}
+							<!-- svelte-ignore a11y-click-events-have-key-events -->
+							<button class="slash-menu-item" on:click={() => { tablePickerVisible = true; tablePickerHover = { rows: 0, cols: 0 }; }}>
+								<span class="slash-menu-icon">{cmd.icon}</span>
+								<span>{cmd.label}</span>
+							</button>
+						{:else}
+							<!-- svelte-ignore a11y-click-events-have-key-events -->
+							<button class="slash-menu-item" on:click={() => executeSlashCommand(cmd.action)}>
+								<span class="slash-menu-icon">{cmd.icon}</span>
+								<span>{cmd.label}</span>
+							</button>
+						{/if}
+					{/each}
+				{/if}
 			</div>
 		{/if}
 
 		<!-- Tiptap 에디터 컨테이너 -->
-		<div bind:this={editorContainer} class="document-view tiptap-container"></div>
+		<div bind:this={editorContainer} class="document-view tiptap-container" style="max-width: {WIDTH_MAP[documentWidth]}"></div>
 	</main>
 
 	<!-- Legal Footer -->
@@ -2215,12 +2283,15 @@ function hello() {
 		border-collapse: collapse;
 		width: 100%;
 		margin: 1em 0;
+		table-layout: fixed;
 	}
 	:global(.tiptap-editor-content th),
 	:global(.tiptap-editor-content td) {
 		border: 1px solid var(--border-color);
 		padding: 0.5em;
 		text-align: left;
+		word-break: break-word;
+		overflow-wrap: break-word;
 	}
 	:global(.tiptap-editor-content th) {
 		background: var(--table-header-bg);
@@ -2537,6 +2608,59 @@ function hello() {
 	}
 	:global(.tiptap-link:hover) {
 		opacity: 0.8;
+	}
+
+	/* Width button */
+	.width-button {
+		background: rgba(255, 255, 255, 0.15);
+		color: white;
+		border: 1px solid rgba(255,255,255,0.25);
+		padding: 0.5rem 1rem;
+		border-radius: 4px;
+		cursor: pointer;
+		font-size: 0.85rem;
+		transition: background-color 0.2s;
+	}
+	.width-button:hover {
+		background: rgba(255, 255, 255, 0.25);
+	}
+
+	/* Table picker inside slash menu */
+	.table-picker {
+		padding: 8px;
+	}
+	.table-picker-label {
+		font-size: 12px;
+		color: var(--text-tertiary, #888);
+		margin-bottom: 8px;
+		text-align: center;
+		font-weight: 600;
+		min-height: 18px;
+	}
+	.table-picker-grid {
+		display: flex;
+		flex-direction: column;
+		gap: 3px;
+	}
+	.table-picker-row {
+		display: flex;
+		gap: 3px;
+	}
+	.table-picker-cell {
+		width: 26px;
+		height: 26px;
+		border: 1px solid var(--border-color, #ddd);
+		border-radius: 3px;
+		cursor: pointer;
+		background: var(--bg-quaternary, #f5f5f5);
+		transition: background 0.1s, border-color 0.1s;
+	}
+	.table-picker-cell.highlighted {
+		background: #3498db;
+		border-color: #2980b9;
+	}
+	.table-picker-cell:hover {
+		border-color: #3498db;
 	}
 
 	/* Responsive design */
