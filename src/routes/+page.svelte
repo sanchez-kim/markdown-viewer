@@ -11,6 +11,7 @@
 	import { Document, Packer, Paragraph, TextRun, Table, TableRow, TableCell, HeadingLevel, AlignmentType, WidthType, BorderStyle } from 'docx';
 	import { saveAs } from 'file-saver';
 	import { Editor } from '@tiptap/core';
+	import { DOMParser as PMDOMParser } from '@tiptap/pm/model';
 	import StarterKit from '@tiptap/starter-kit';
 	import Image from '@tiptap/extension-image';
 	import Link from '@tiptap/extension-link';
@@ -84,7 +85,9 @@ function hello() {
 	let tiptapEditor: Editor | null = null;
 	let editorContainer: HTMLDivElement;
 	let bubbleMenuElement: HTMLDivElement;
-	let tableBubbleMenuElement: HTMLDivElement;
+	let isInTable = false;
+	let tableMenuOpen = false;
+	let tableMenuPos = { x: 0, y: 0 };
 
 	// ===== SLASH COMMAND STATE =====
 	let slashMenuVisible = false;
@@ -235,7 +238,7 @@ function hello() {
 				toastStore.show(
 					`이전 작업을 불러왔습니다${savedTime ? ` (${savedTime})` : ''}`,
 					'info',
-					0, // persistent until dismissed
+					6000,
 					{ label: '새 문서로 시작', onClick: newDocument }
 				);
 			}
@@ -597,7 +600,7 @@ function hello() {
 					autolink: true,
 				}),
 				MarkdownExt.configure({
-					html: false,
+					html: true,
 					transformPastedText: true,
 					transformCopiedText: true,
 				}),
@@ -619,11 +622,6 @@ function hello() {
 				TableCellExt,
 				TaskList,
 				TaskItem.configure({ nested: true }),
-				BubbleMenuExt.configure({
-					element: tableBubbleMenuElement,
-					tippyOptions: { duration: 100 },
-					shouldShow: ({ editor }) => editor.isActive('table'),
-				}),
 				Placeholder.configure({
 					placeholder: '여기를 클릭하여 작성을 시작하세요... (/ 를 입력하면 블록을 추가할 수 있어요)',
 				}),
@@ -635,6 +633,23 @@ function hello() {
 				if (md !== markdownText) {
 					markdownText = md;
 				}
+			},
+			onSelectionUpdate: ({ editor }) => {
+				const inTable = editor.isActive('table');
+				isInTable = inTable;
+				if (!inTable) { tableMenuOpen = false; return; }
+				// 표 DOM 요소의 위치를 찾아 핸들 버튼 위치 업데이트
+				try {
+					const { from } = editor.state.selection;
+					const domInfo = editor.view.domAtPos(from);
+					let el: Element | null = domInfo.node instanceof Element
+						? domInfo.node : (domInfo.node as Node).parentElement;
+					while (el && el.tagName !== 'TABLE') el = el.parentElement;
+					if (el) {
+						const rect = el.getBoundingClientRect();
+						tableMenuPos = { x: rect.right - 32, y: rect.top + 4 };
+					}
+				} catch (_) {}
 			},
 			editorProps: {
 				attributes: {
@@ -686,7 +701,7 @@ function hello() {
 						});
 						return true;
 					},
-					paste: (view, event) => {
+					paste: (_view, event) => {
 						const clipboardData = (event as ClipboardEvent).clipboardData;
 						const items = Array.from(clipboardData?.items || []);
 						const imageItem = items.find(item => item.type.startsWith('image/'));
@@ -696,15 +711,22 @@ function hello() {
 							if (file) insertImageToTiptap(file);
 							return true;
 						}
-						// Only override when HTML is also present (VS Code/editor HTML bleeding).
-						// Plain-text-only pastes are handled natively by tiptap-markdown —
-						// calling view.pasteText() on those causes '\' to appear on every line.
+						// When HTML is present (VS Code, browser, etc.), ProseMirror prefers
+						// the styled HTML. Fix: take plain text (raw markdown), convert via
+						// marked(), then parse with ProseMirror's DOMParser directly.
 						const types = clipboardData?.types ?? [];
 						if (types.includes('text/html') && types.includes('text/plain')) {
 							const text = clipboardData!.getData('text/plain');
-							if (text) {
+							if (text && tiptapEditor) {
 								event.preventDefault();
-								view.pasteText(text);
+								const raw = marked(text) as string;
+								const html = browser ? DOMPurify.sanitize(raw) : raw;
+								const el = document.createElement('div');
+								el.innerHTML = html;
+								const { view } = tiptapEditor;
+								const parser = PMDOMParser.fromSchema(view.state.schema);
+								const slice = parser.parseSlice(el);
+								view.dispatch(view.state.tr.replaceSelection(slice));
 								return true;
 							}
 						}
@@ -1246,6 +1268,8 @@ function hello() {
 	});
 </script>
 
+<svelte:window on:click={() => { if (tableMenuOpen) tableMenuOpen = false; }} />
+
 <svelte:head>
 	<title>이지 마크다운 - EasyMD | 무료 실시간 마크다운 에디터</title>
 
@@ -1558,26 +1582,34 @@ function hello() {
 					class:active={tiptapEditor?.isActive('link')} title="링크">🔗</button>
 		</div>
 
-		<!-- Table Bubble Menu (표 셀 안에 커서가 있을 때 표시) -->
-		<!-- svelte-ignore a11y-no-static-element-interactions -->
-		<div bind:this={tableBubbleMenuElement} class="table-bubble-menu">
+		<!-- Table Handle Button (표 안에 커서 있을 때 우상단에 표시) -->
+		{#if isInTable}
 			<!-- svelte-ignore a11y-click-events-have-key-events -->
-			<button on:click={() => tiptapEditor?.chain().focus().addRowBefore().run()} title="위에 행 추가">↑행</button>
-			<!-- svelte-ignore a11y-click-events-have-key-events -->
-			<button on:click={() => tiptapEditor?.chain().focus().addRowAfter().run()} title="아래에 행 추가">↓행</button>
-			<!-- svelte-ignore a11y-click-events-have-key-events -->
-			<button on:click={() => tiptapEditor?.chain().focus().deleteRow().run()} title="행 삭제" class="danger">행✕</button>
-			<div class="bubble-separator"></div>
-			<!-- svelte-ignore a11y-click-events-have-key-events -->
-			<button on:click={() => tiptapEditor?.chain().focus().addColumnBefore().run()} title="왼쪽에 열 추가">←열</button>
-			<!-- svelte-ignore a11y-click-events-have-key-events -->
-			<button on:click={() => tiptapEditor?.chain().focus().addColumnAfter().run()} title="오른쪽에 열 추가">열→</button>
-			<!-- svelte-ignore a11y-click-events-have-key-events -->
-			<button on:click={() => tiptapEditor?.chain().focus().deleteColumn().run()} title="열 삭제" class="danger">열✕</button>
-			<div class="bubble-separator"></div>
-			<!-- svelte-ignore a11y-click-events-have-key-events -->
-			<button on:click={() => tiptapEditor?.chain().focus().deleteTable().run()} title="표 삭제" class="danger">표 삭제</button>
-		</div>
+			<button
+				class="table-handle-btn"
+				style="left: {tableMenuPos.x}px; top: {tableMenuPos.y}px;"
+				on:click|stopPropagation={() => tableMenuOpen = !tableMenuOpen}
+				title="표 옵션"
+				role="button"
+			>⊞</button>
+			{#if tableMenuOpen}
+				<!-- svelte-ignore a11y-no-static-element-interactions -->
+				<!-- svelte-ignore a11y-click-events-have-key-events -->
+				<div class="table-action-menu"
+					style="left: {tableMenuPos.x - 160}px; top: {tableMenuPos.y + 32}px;"
+					on:click|stopPropagation>
+					<button on:click={() => { tiptapEditor?.chain().focus().addRowBefore().run(); tableMenuOpen = false; }}>↑ 위에 행 추가</button>
+					<button on:click={() => { tiptapEditor?.chain().focus().addRowAfter().run(); tableMenuOpen = false; }}>↓ 아래에 행 추가</button>
+					<button class="danger" on:click={() => { tiptapEditor?.chain().focus().deleteRow().run(); tableMenuOpen = false; }}>행 삭제</button>
+					<div class="table-menu-sep"></div>
+					<button on:click={() => { tiptapEditor?.chain().focus().addColumnBefore().run(); tableMenuOpen = false; }}>← 왼쪽에 열 추가</button>
+					<button on:click={() => { tiptapEditor?.chain().focus().addColumnAfter().run(); tableMenuOpen = false; }}>→ 오른쪽에 열 추가</button>
+					<button class="danger" on:click={() => { tiptapEditor?.chain().focus().deleteColumn().run(); tableMenuOpen = false; }}>열 삭제</button>
+					<div class="table-menu-sep"></div>
+					<button class="danger" on:click={() => { tiptapEditor?.chain().focus().deleteTable().run(); tableMenuOpen = false; }}>표 삭제</button>
+				</div>
+			{/if}
+		{/if}
 
 		<!-- Slash Command Menu (/를 빈 줄에서 입력 시 표시) -->
 		{#if slashMenuVisible}
@@ -2575,34 +2607,64 @@ function hello() {
 	}
 
 	/* Table Bubble Menu */
-	.table-bubble-menu {
+	.table-handle-btn {
+		position: fixed;
+		z-index: 200;
+		background: var(--bg-header, #2c3e50);
+		color: white;
+		border: none;
+		border-radius: 4px;
+		width: 26px;
+		height: 26px;
+		cursor: pointer;
+		font-size: 13px;
 		display: flex;
 		align-items: center;
-		gap: 2px;
-		background: var(--bg-header, #2c3e50);
-		border-radius: 8px;
-		padding: 4px 6px;
-		box-shadow: 0 4px 16px rgba(0,0,0,0.2);
-		z-index: 100;
-		visibility: hidden;
+		justify-content: center;
+		opacity: 0.6;
+		transition: opacity 0.15s;
+		padding: 0;
 	}
-	.table-bubble-menu button {
-		background: transparent;
+	.table-handle-btn:hover {
+		opacity: 1;
+	}
+	.table-action-menu {
+		position: fixed;
+		z-index: 200;
+		background: var(--bg-secondary, white);
+		border: 1px solid var(--border-color, #e5e7eb);
+		border-radius: 8px;
+		box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+		padding: 4px;
+		min-width: 180px;
+		display: flex;
+		flex-direction: column;
+	}
+	.table-action-menu button {
+		background: none;
 		border: none;
-		color: white;
-		padding: 4px 8px;
-		border-radius: 4px;
+		padding: 8px 12px;
+		text-align: left;
 		cursor: pointer;
-		font-size: 12px;
-		font-weight: 600;
-		transition: background 0.15s;
+		border-radius: 4px;
+		font-size: 13px;
+		color: var(--text-primary, #374151);
+		transition: background 0.1s;
 		white-space: nowrap;
 	}
-	.table-bubble-menu button:hover {
-		background: rgba(255,255,255,0.2);
+	.table-action-menu button:hover {
+		background: var(--bg-hover, #f3f4f6);
 	}
-	.table-bubble-menu button.danger:hover {
-		background: rgba(231, 76, 60, 0.6);
+	.table-action-menu button.danger {
+		color: #ef4444;
+	}
+	.table-action-menu button.danger:hover {
+		background: #fef2f2;
+	}
+	.table-menu-sep {
+		height: 1px;
+		background: var(--border-color, #e5e7eb);
+		margin: 4px 0;
 	}
 
 	/* Task list styles */
