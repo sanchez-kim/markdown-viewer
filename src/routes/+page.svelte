@@ -616,7 +616,7 @@ function hello() {
 						return from !== to;
 					},
 				}),
-				TiptapTable.configure({ resizable: false }),
+				TiptapTable.configure({ resizable: true }),
 				TableRowExt,
 				TableHeaderExt,
 				TableCellExt,
@@ -2344,7 +2344,6 @@ function hello() {
 		border-collapse: collapse;
 		width: 100%;
 		margin: 1em 0;
-		table-layout: fixed;
 	}
 	:global(.tiptap-editor-content th),
 	:global(.tiptap-editor-content td) {
@@ -2353,6 +2352,26 @@ function hello() {
 		text-align: left;
 		word-break: break-word;
 		overflow-wrap: break-word;
+	}
+	/* Column resize handle */
+	:global(.tiptap-editor-content .column-resize-handle) {
+		position: absolute;
+		right: -2px;
+		top: 0;
+		bottom: 0;
+		width: 4px;
+		background: #3b82f6;
+		opacity: 0;
+		cursor: col-resize;
+		transition: opacity 0.15s;
+		z-index: 10;
+	}
+	:global(.tiptap-editor-content td:hover .column-resize-handle),
+	:global(.tiptap-editor-content th:hover .column-resize-handle) {
+		opacity: 1;
+	}
+	:global(.tiptap-editor-content.resize-cursor) {
+		cursor: col-resize;
 	}
 	:global(.tiptap-editor-content th) {
 		background: var(--table-header-bg);
