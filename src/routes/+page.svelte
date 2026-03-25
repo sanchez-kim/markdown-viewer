@@ -80,7 +80,7 @@ function hello() {
 	let imageIdCounter = 0; // Unique ID counter for images
 	let showMobileMenu = false;
 	let showShortcutsModal = false;
-	let showHero = true;
+	let showHero = browser ? !localStorage.getItem('markdown-viewer-content') : true;
 
 	// ===== TIPTAP EDITOR STATE =====
 	let tiptapEditor: Editor | null = null;
@@ -1481,14 +1481,14 @@ function hello() {
 		<div class="hero-inner">
 			<div class="hero-badge">무료 · 설치 불필요 · 브라우저에서 바로</div>
 			<h1 class="hero-title">노션처럼 쓰는<br>마크다운 에디터</h1>
-			<p class="hero-desc">마크다운을 입력하면 즉시 서식이 적용됩니다.<br>작성한 내용은 자동 저장되고, MD·PDF·DOCX로 내보낼 수 있어요.</p>
+			<p class="hero-desc">글을 쓰면 바로 예쁘게 보입니다.<br>저장은 자동으로, 내보내기는 MD·PDF·Word까지.</p>
 			<button class="hero-cta" on:click={startEditing}>
-				지금 바로 시작하기 →
+				지금 바로 써보기 →
 			</button>
 			<div class="hero-features">
 				<div class="hero-feature">
 					<span class="hero-feature-icon">✏️</span>
-					<span>WYSIWYG 편집</span>
+					<span>쓰는 대로 바로 보임</span>
 				</div>
 				<div class="hero-feature">
 					<span class="hero-feature-icon">💾</span>
@@ -1496,7 +1496,7 @@ function hello() {
 				</div>
 				<div class="hero-feature">
 					<span class="hero-feature-icon">📁</span>
-					<span>MD / PDF / DOCX</span>
+					<span>MD / PDF / Word 내보내기</span>
 				</div>
 				<div class="hero-feature">
 					<span class="hero-feature-icon">🌙</span>
@@ -1504,7 +1504,7 @@ function hello() {
 				</div>
 				<div class="hero-feature">
 					<span class="hero-feature-icon">🔒</span>
-					<span>데이터 로컬 저장</span>
+					<span>내 컴퓨터에만 저장</span>
 				</div>
 			</div>
 		</div>
