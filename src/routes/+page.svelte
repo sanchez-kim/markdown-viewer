@@ -80,6 +80,7 @@ function hello() {
 	let imageIdCounter = 0; // Unique ID counter for images
 	let showMobileMenu = false;
 	let showShortcutsModal = false;
+	let showHero = true;
 
 	// ===== TIPTAP EDITOR STATE =====
 	let tiptapEditor: Editor | null = null;
@@ -245,6 +246,14 @@ function hello() {
 		} catch (error) {
 			console.error('불러오기 실패:', error);
 		}
+	}
+
+	function startEditing() {
+		showHero = false;
+		setTimeout(() => {
+			editorContainer?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+			tiptapEditor?.commands.focus();
+		}, 50);
 	}
 
 	function newDocument() {
@@ -1467,6 +1476,40 @@ function hello() {
 	</header>
 
 	<main class="main">
+	{#if showHero}
+	<section class="hero">
+		<div class="hero-inner">
+			<div class="hero-badge">무료 · 설치 불필요 · 브라우저에서 바로</div>
+			<h1 class="hero-title">노션처럼 쓰는<br>마크다운 에디터</h1>
+			<p class="hero-desc">마크다운을 입력하면 즉시 서식이 적용됩니다.<br>작성한 내용은 자동 저장되고, MD·PDF·DOCX로 내보낼 수 있어요.</p>
+			<button class="hero-cta" on:click={startEditing}>
+				지금 바로 시작하기 →
+			</button>
+			<div class="hero-features">
+				<div class="hero-feature">
+					<span class="hero-feature-icon">✏️</span>
+					<span>WYSIWYG 편집</span>
+				</div>
+				<div class="hero-feature">
+					<span class="hero-feature-icon">💾</span>
+					<span>자동 저장</span>
+				</div>
+				<div class="hero-feature">
+					<span class="hero-feature-icon">📁</span>
+					<span>MD / PDF / DOCX</span>
+				</div>
+				<div class="hero-feature">
+					<span class="hero-feature-icon">🌙</span>
+					<span>다크 모드</span>
+				</div>
+				<div class="hero-feature">
+					<span class="hero-feature-icon">🔒</span>
+					<span>데이터 로컬 저장</span>
+				</div>
+			</div>
+		</div>
+	</section>
+	{/if}
 		<!-- Bubble Menu (텍스트 선택 시 표시) -->
 		<!-- svelte-ignore a11y-no-static-element-interactions -->
 		<div bind:this={bubbleMenuElement} class="bubble-menu">
@@ -2854,6 +2897,106 @@ function hello() {
 
 		.footer-copyright {
 			font-size: 0.8rem;
+		}
+	}
+
+	/* ===== HERO SECTION ===== */
+	.hero {
+		display: flex;
+		justify-content: center;
+		align-items: center;
+		padding: 5rem 2rem 4rem;
+		background: var(--bg-secondary);
+		border-bottom: 1px solid var(--border-color);
+		text-align: center;
+	}
+
+	.hero-inner {
+		max-width: 640px;
+		width: 100%;
+	}
+
+	.hero-badge {
+		display: inline-block;
+		background: #e8f4fd;
+		color: #2980b9;
+		font-size: 0.8rem;
+		font-weight: 600;
+		padding: 0.3rem 0.85rem;
+		border-radius: 999px;
+		margin-bottom: 1.5rem;
+		letter-spacing: 0.02em;
+	}
+
+	:global(.dark) .hero-badge {
+		background: #1a3a52;
+		color: #74b9d8;
+	}
+
+	.hero-title {
+		font-size: 2.6rem;
+		font-weight: 800;
+		line-height: 1.2;
+		color: var(--text-primary);
+		margin: 0 0 1.25rem;
+		letter-spacing: -0.02em;
+	}
+
+	.hero-desc {
+		font-size: 1.05rem;
+		line-height: 1.7;
+		color: var(--text-tertiary);
+		margin: 0 0 2rem;
+	}
+
+	.hero-cta {
+		display: inline-block;
+		background: #2980b9;
+		color: #fff;
+		border: none;
+		padding: 0.85rem 2rem;
+		border-radius: 8px;
+		font-size: 1rem;
+		font-weight: 700;
+		cursor: pointer;
+		transition: background 0.2s, transform 0.15s;
+		margin-bottom: 3rem;
+	}
+
+	.hero-cta:hover {
+		background: #1a6fa3;
+		transform: translateY(-2px);
+	}
+
+	.hero-features {
+		display: flex;
+		flex-wrap: wrap;
+		justify-content: center;
+		gap: 0.75rem 1.5rem;
+	}
+
+	.hero-feature {
+		display: flex;
+		align-items: center;
+		gap: 0.4rem;
+		font-size: 0.9rem;
+		color: var(--text-tertiary);
+		font-weight: 500;
+	}
+
+	.hero-feature-icon {
+		font-size: 1rem;
+	}
+
+	@media (max-width: 600px) {
+		.hero {
+			padding: 3.5rem 1.5rem 3rem;
+		}
+		.hero-title {
+			font-size: 2rem;
+		}
+		.hero-desc {
+			font-size: 0.95rem;
 		}
 	}
 </style>
