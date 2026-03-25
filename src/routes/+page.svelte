@@ -2867,6 +2867,7 @@
 		justify-content: center;
 		align-items: center;
 		padding: 5rem 2rem 4rem;
+		min-height: calc(100svh - 60px);
 		background: var(--bg-secondary);
 		border-bottom: 1px solid var(--border-color);
 		text-align: center;
@@ -2952,6 +2953,7 @@
 	@media (max-width: 600px) {
 		.hero {
 			padding: 3.5rem 1.5rem 3rem;
+			min-height: calc(100svh - 56px);
 		}
 		.hero-title {
 			font-size: 2rem;
