@@ -1292,6 +1292,24 @@ function hello() {
 	<meta property="twitter:description" content="브라우저에서 바로 사용하는 무료 마크다운 에디터. 실시간 미리보기, 자동 저장, PDF 내보내기 지원." />
 	<meta property="twitter:image" content="https://easymd.netlify.app/og-image.png" />
 
+	<!-- JSON-LD 구조화 데이터 -->
+	<script type="application/ld+json">{JSON.stringify({
+		"@context": "https://schema.org",
+		"@type": "WebApplication",
+		"name": "이지 마크다운 (EasyMD)",
+		"url": "https://easymd.netlify.app",
+		"description": "브라우저에서 바로 사용하는 무료 마크다운 에디터. 실시간 미리보기, 자동 저장, PDF 내보내기 지원. 로그인 불필요.",
+		"applicationCategory": "ProductivityApplication",
+		"operatingSystem": "Web Browser",
+		"offers": {
+			"@type": "Offer",
+			"price": "0",
+			"priceCurrency": "KRW"
+		},
+		"inLanguage": ["ko", "en"],
+		"featureList": ["실시간 마크다운 미리보기", "자동 저장", "PDF 내보내기", "DOCX 내보내기", "이미지 삽입", "표 편집"]
+	})}</script>
+
 </svelte:head>
 
 <Toast />
