@@ -14,8 +14,7 @@
 	<!-- Canonical URL -->
 	<link rel="canonical" href={canonicalUrl} />
 
-	<!-- Google Search Console 인증 (발급 후 content 값 입력) -->
-	<!-- <meta name="google-site-verification" content="YOUR_VERIFICATION_CODE_HERE" /> -->
+	<meta name="google-site-verification" content="5-LvgZ7FAr7MVolS-rpUAl9wzI3Cl0hUmD4vt9o2fpE" />
 </svelte:head>
 
 {@render children?.()}
