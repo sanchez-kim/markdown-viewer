@@ -28,46 +28,7 @@
 	import Highlight from '@tiptap/extension-highlight';
 	import Underline from '@tiptap/extension-underline';
 
-	let markdownText = `# 🎉 이지 마크다운에 오신 것을 환영합니다!
-
-이곳에서 **마크다운 문서**를 쉽고 편리하게 작성해보세요. 왼쪽에 글을 쓰면 오른쪽에서 바로 결과를 확인할 수 있어요!
-
-## ✏️ 사용 방법
-
-### 1️⃣ 기본 글쓰기
-- **굵게** 하려면 \`**텍스트**\` 
-- *기울임* 글씨는 \`*텍스트*\`
-- [링크는 이렇게](https://github.com)
-
-### 2️⃣ 목록 만들기
-- 첫 번째 항목
-- 두 번째 항목
-- 세 번째 항목
-
-1. 번호가 있는 목록
-2. 이렇게 만들어요
-3. 간단하죠?
-
-### 3️⃣ 코드 입력
-\`\`\`javascript
-// Code blocks work like this!
-function hello() {
-    console.log("안녕하세요!");
-}
-\`\`\`
-
-### 4️⃣ 인용구
-> 인용하고 싶은 글이나 중요한 내용은
-> 이렇게 표시할 수 있어요.
-
-## 💡 이런 것들을 해보세요!
-
-- 🔄 **스크롤 연동**: 위쪽 버튼으로 에디터와 미리보기 스크롤을 함께 움직일 수 있어요
-- 💾 **자동 저장**: 5분마다 자동으로 저장되니까 걱정 마세요
-- 📁 **파일명 변경**: 위쪽의 파일명을 클릭하면 이름을 바꿀 수 있어요
-- 🖼️ **이미지 추가**: 드래그해서 이미지를 넣을 수 있어요 (곧 추가 예정!)
-
-지금 바로 이 글을 지우고 새로운 문서를 만들어보세요! 🚀`;
+	let markdownText = '';
 
 	let renderedHtml = '';
 	let previewElement: HTMLDivElement | undefined;
