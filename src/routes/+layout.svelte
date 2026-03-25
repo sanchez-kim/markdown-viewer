@@ -1,11 +1,11 @@
 <script lang="ts">
 	import favicon from '$lib/assets/favicon.ico';
-	import { page } from '$app/stores';
+	import { page } from '$app/state';
 
 	let { children } = $props();
 
 	const BASE_URL = 'https://easymd.netlify.app';
-	$: canonicalUrl = `${BASE_URL}${$page.url.pathname}`;
+	const canonicalUrl = $derived(`${BASE_URL}${page.url.pathname}`);
 </script>
 
 <svelte:head>
