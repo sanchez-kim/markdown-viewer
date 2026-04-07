@@ -586,7 +586,7 @@
 						return from !== to;
 					},
 				}),
-				TiptapTable.configure({ resizable: true }),
+				TiptapTable.configure({ resizable: true, lastColumnResizable: false, handleWidth: 3 }),
 				TableRowExt,
 				TableHeaderExt,
 				TableCellExt,
@@ -2378,19 +2378,24 @@
 	/* Column resize handle */
 	:global(.tiptap-editor-content .column-resize-handle) {
 		position: absolute;
-		right: -2px;
+		right: -1px;
 		top: 0;
 		bottom: 0;
-		width: 4px;
+		width: 2px;
 		background: #3b82f6;
 		opacity: 0;
 		cursor: col-resize;
 		transition: opacity 0.15s;
 		z-index: 10;
+		pointer-events: auto;
 	}
 	:global(.tiptap-editor-content td:hover .column-resize-handle),
 	:global(.tiptap-editor-content th:hover .column-resize-handle) {
+		opacity: 0.6;
+	}
+	:global(.tiptap-editor-content .column-resize-handle:hover) {
 		opacity: 1;
+		width: 3px;
 	}
 	:global(.tiptap-editor-content.resize-cursor) {
 		cursor: col-resize;
