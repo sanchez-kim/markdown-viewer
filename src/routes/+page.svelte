@@ -11,7 +11,7 @@
 	import { Document, Packer, Paragraph, TextRun, Table, TableRow, TableCell, HeadingLevel, AlignmentType, WidthType, BorderStyle } from 'docx';
 	import { saveAs } from 'file-saver';
 	import { Editor } from '@tiptap/core';
-	import { DOMParser as PMDOMParser } from '@tiptap/pm/model';
+	import { DOMParser as PMDOMParser, DOMSerializer as PMDOMSerializer } from '@tiptap/pm/model';
 	import StarterKit from '@tiptap/starter-kit';
 	import Image from '@tiptap/extension-image';
 	import Link from '@tiptap/extension-link';
@@ -572,7 +572,7 @@
 				MarkdownExt.configure({
 					html: true,
 					transformPastedText: true,
-					transformCopiedText: true,
+					transformCopiedText: false,
 				}),
 				BubbleMenuExt.configure({
 					element: bubbleMenuElement,
@@ -586,7 +586,7 @@
 						return from !== to;
 					},
 				}),
-				TiptapTable.configure({ resizable: true, lastColumnResizable: false, handleWidth: 3 }),
+				TiptapTable.configure({ resizable: false }),
 				TableRowExt,
 				TableHeaderExt,
 				TableCellExt,
@@ -624,6 +624,15 @@
 			editorProps: {
 				attributes: {
 					class: 'tiptap-editor-content',
+				},
+				clipboardTextSerializer: (slice) => {
+					// 테이블 셀 복사 시 HTML 태그 대신 순수 텍스트 반환
+					const div = document.createElement('div');
+					const schema = tiptapEditor!.schema;
+					const ser = PMDOMSerializer.fromSchema(schema);
+					const dom = ser.serializeFragment(slice.content);
+					div.appendChild(dom);
+					return div.textContent || '';
 				},
 				handleKeyDown: (view, event) => {
 					// "/" 입력 시 slash command 메뉴 표시
@@ -2375,30 +2384,14 @@
 		word-break: break-word;
 		overflow-wrap: break-word;
 	}
-	/* Column resize handle */
-	:global(.tiptap-editor-content .column-resize-handle) {
-		position: absolute;
-		right: -1px;
-		top: 0;
-		bottom: 0;
-		width: 2px;
-		background: #3b82f6;
-		opacity: 0;
-		cursor: col-resize;
-		transition: opacity 0.15s;
-		z-index: 10;
-		pointer-events: auto;
+	/* Table cell selection */
+	:global(.tiptap-editor-content td),
+	:global(.tiptap-editor-content th) {
+		cursor: text;
 	}
-	:global(.tiptap-editor-content td:hover .column-resize-handle),
-	:global(.tiptap-editor-content th:hover .column-resize-handle) {
-		opacity: 0.6;
-	}
-	:global(.tiptap-editor-content .column-resize-handle:hover) {
-		opacity: 1;
-		width: 3px;
-	}
-	:global(.tiptap-editor-content.resize-cursor) {
-		cursor: col-resize;
+	:global(.tiptap-editor-content td p),
+	:global(.tiptap-editor-content th p) {
+		margin: 0;
 	}
 	:global(.tiptap-editor-content th) {
 		background: var(--table-header-bg);
