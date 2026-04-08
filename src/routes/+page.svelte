@@ -1272,7 +1272,7 @@
 	<meta property="twitter:image" content="https://easymd.netlify.app/og-image.png" />
 
 	<!-- JSON-LD 구조화 데이터 -->
-	<script type="application/ld+json">{JSON.stringify({
+	{@html `<script type="application/ld+json">${JSON.stringify({
 		"@context": "https://schema.org",
 		"@type": "WebApplication",
 		"name": "이지 마크다운 (EasyMD)",
@@ -1287,7 +1287,7 @@
 		},
 		"inLanguage": ["ko", "en"],
 		"featureList": ["실시간 마크다운 미리보기", "자동 저장", "PDF 내보내기", "DOCX 내보내기", "이미지 삽입", "표 편집"]
-	})}</script>
+	})}<\/script>`}
 
 </svelte:head>
 
