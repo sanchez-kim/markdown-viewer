@@ -15,6 +15,7 @@
 	<link rel="canonical" href={canonicalUrl} />
 
 	<meta name="google-site-verification" content="5-LvgZ7FAr7MVolS-rpUAl9wzI3Cl0hUmD4vt9o2fpE" />
+
 </svelte:head>
 
 {@render children?.()}

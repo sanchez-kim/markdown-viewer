@@ -1,2 +1,2 @@
-// Disable SSR for the editor page — uses browser-only APIs (localStorage, DOMPurify, etc.)
-export const ssr = false;
+// SSR enabled for prerendering SEO meta tags (title, description, OG, JSON-LD)
+// Browser-only APIs (Tiptap, localStorage, DOMPurify) are guarded by onMount/browser checks
