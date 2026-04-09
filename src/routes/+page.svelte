@@ -8,8 +8,11 @@
 	import Toast from '$lib/components/Toast.svelte';
 	import { toastStore } from '$lib/stores/toast';
 	import { themeStore } from '$lib/stores/theme';
-	import { Document, Packer, Paragraph, TextRun, Table, TableRow, TableCell, HeadingLevel, AlignmentType, WidthType, BorderStyle } from 'docx';
-	import { saveAs } from 'file-saver';
+	import { exportAsDocx } from '$lib/utils/docxExport';
+	import { docStore } from '$lib/stores/documents';
+	import { pushHistory, getHistory } from '$lib/stores/history';
+	import { encodeShareLink, decodeShareHash, isShareLink, clearShareHash, getShareLinkWarning } from '$lib/utils/shareLink';
+	import DocList from '$lib/components/DocList.svelte';
 	import { Editor } from '@tiptap/core';
 	import { DOMParser as PMDOMParser, DOMSerializer as PMDOMSerializer } from '@tiptap/pm/model';
 	import StarterKit from '@tiptap/starter-kit';
@@ -41,7 +44,9 @@
 	let imageIdCounter = 0; // Unique ID counter for images
 	let showMobileMenu = false;
 	let showShortcutsModal = false;
-	let showHero = browser ? !localStorage.getItem('markdown-viewer-content') : true;
+	let showHero = false; // will be set in onMount after docStore.init()
+	let activeDocId = '';
+	let showDocList = false;
 
 	// ===== TIPTAP EDITOR STATE =====
 	let tiptapEditor: Editor | null = null;
@@ -148,64 +153,38 @@
 	}
 
 	// ===== LOCAL STORAGE & AUTO-SAVE =====
-	function saveToLocal() {
-		if (!browser || typeof localStorage === 'undefined') return;
+	function saveToLocal(label = '수동저장') {
+		if (!browser) return;
 		try {
 			saveStatus = 'saving';
-			localStorage.setItem('markdown-viewer-content', markdownText);
-			localStorage.setItem('markdown-viewer-filename', currentFileName);
-			localStorage.setItem('markdown-viewer-timestamp', new Date().toISOString());
+			docStore.saveDoc(activeDocId, markdownText, currentFileName);
+			pushHistory(activeDocId, markdownText, label);
 			lastSaved = new Date().toLocaleTimeString();
 			saveStatus = 'saved';
-			previousText = markdownText; // Update previous text after saving
+			previousText = markdownText;
 		} catch (error) {
 			console.error('저장 실패:', error);
 			saveStatus = 'unsaved';
-			// QuotaExceededError 감지
 			const isQuotaError = error instanceof DOMException && (
 				error.name === 'QuotaExceededError' ||
 				error.name === 'NS_ERROR_DOM_QUOTA_REACHED'
 			);
 			if (isQuotaError) {
-				toastStore.show(
-					'저장 공간이 부족합니다. 이미지를 줄이거나 브라우저 캐시를 정리해주세요.',
-					'error',
-					6000
-				);
+				toastStore.show('저장 공간이 부족합니다. 이미지를 줄이거나 브라우저 캐시를 정리해주세요.', 'error', 6000);
 			} else {
 				toastStore.show('저장에 실패했습니다.', 'error');
 			}
 		}
 	}
 
-	// Load from localStorage
-	function loadFromLocal() {
-		if (!browser || typeof localStorage === 'undefined') return;
-		try {
-			const savedContent = localStorage.getItem('markdown-viewer-content');
-			const savedFilename = localStorage.getItem('markdown-viewer-filename');
-			const savedTimestamp = localStorage.getItem('markdown-viewer-timestamp');
-
-			if (savedContent) {
-				// Auto-restore saved draft silently
-				markdownText = savedContent;
-				currentFileName = savedFilename || 'untitled.md';
-				previousText = savedContent;
-				saveStatus = 'saved';
-
-				// Show non-blocking info toast with "새 문서" action
-				const savedTime = savedTimestamp
-					? new Date(savedTimestamp).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' })
-					: '';
-				toastStore.show(
-					`이전 작업을 불러왔습니다${savedTime ? ` (${savedTime})` : ''}`,
-					'info',
-					6000,
-					{ label: '새 문서로 시작', onClick: newDocument }
-				);
-			}
-		} catch (error) {
-			console.error('불러오기 실패:', error);
+	function loadDoc(content: string, title: string, docId: string) {
+		markdownText = content;
+		currentFileName = title;
+		activeDocId = docId;
+		previousText = content;
+		saveStatus = 'saved';
+		if (tiptapEditor) {
+			tiptapEditor.commands.setContent(content);
 		}
 	}
 
@@ -221,16 +200,28 @@
 		if (saveStatus === 'unsaved') {
 			if (!confirm('저장되지 않은 내용이 있습니다. 새 문서를 시작하면 사라집니다. 계속하시겠습니까?')) return;
 		}
-		markdownText = '';
-		currentFileName = 'untitled.md';
-		saveStatus = 'saved';
-		previousText = '';
-		if (tiptapEditor) {
-			tiptapEditor.commands.setContent('');
-		}
-		localStorage.removeItem('markdown-viewer-content');
-		localStorage.removeItem('markdown-viewer-filename');
-		localStorage.removeItem('markdown-viewer-timestamp');
+		const { content, meta } = docStore.createDoc('untitled.md', '');
+		loadDoc(content, meta.title, meta.id);
+		showHero = false;
+	}
+
+	function switchDocument(id: string) {
+		if (id === activeDocId) return;
+		if (saveStatus === 'unsaved') saveToLocal('자동저장');
+		const { content, meta } = docStore.switchDoc(id);
+		if (meta) loadDoc(content, meta.title, meta.id);
+	}
+
+	function deleteDocument(id: string) {
+		const { content, meta } = docStore.deleteDoc(id);
+		if (meta) loadDoc(content, meta.title, meta.id);
+	}
+
+	function restoreVersion(markdown: string) {
+		pushHistory(activeDocId, markdownText, '복원 전 자동저장');
+		markdownText = markdown;
+		if (tiptapEditor) tiptapEditor.commands.setContent(markdown);
+		saveToLocal('버전 복원');
 	}
 
 	// Auto-save every 5 minutes
@@ -240,21 +231,34 @@
 		if (autoSaveInterval) clearInterval(autoSaveInterval);
 		autoSaveInterval = setInterval(() => {
 			if (markdownText && saveStatus !== 'saving') {
-				saveToLocal();
+				saveToLocal('자동저장');
 			}
-		}, 5 * 60 * 1000); // Auto-save every 5 minutes
+		}, 5 * 60 * 1000);
 	}
 
 	function stopAutoSave() {
-		if (autoSaveInterval) {
-			clearInterval(autoSaveInterval);
-		}
+		if (autoSaveInterval) clearInterval(autoSaveInterval);
 	}
 
-	// Manual save function
 	function manualSave() {
-		saveToLocal();
-		toastStore.show('로컬스토리지에 저장되었습니다!', 'success');
+		saveToLocal('수동저장');
+		toastStore.show('저장되었습니다!', 'success');
+	}
+
+	async function copyShareLink() {
+		if (tiptapEditor) {
+			markdownText = (tiptapEditor.storage as any).markdown.getMarkdown();
+		}
+		const warning = getShareLinkWarning(markdownText);
+		if (warning) toastStore.show(warning, 'warning', 5000);
+		const link = encodeShareLink(markdownText);
+		if (!link) return;
+		try {
+			await navigator.clipboard.writeText(link);
+			toastStore.show('공유 링크가 클립보드에 복사되었습니다!', 'success');
+		} catch {
+			toastStore.show('복사 실패: ' + link, 'info', 0);
+		}
 	}
 
 	// ===== FILE I/O OPERATIONS =====
@@ -949,230 +953,47 @@
 	}
 
 	// ===== DOCX EXPORT =====
-	async function exportAsDocx() {
-		try {
-			saveStatus = 'saving';
-
-			// Parse markdown into tokens
-			const tokens = marked.lexer(markdownText);
-			const children: any[] = [];
-
-			// Helper function to convert HTML back to markdown for parsing
-			function htmlToMarkdown(html: string): string {
-				return html
-					.replace(/<strong>(.*?)<\/strong>/g, '**$1**')
-					.replace(/<b>(.*?)<\/b>/g, '**$1**')
-					.replace(/<em>(.*?)<\/em>/g, '*$1*')
-					.replace(/<i>(.*?)<\/i>/g, '*$1*')
-					.replace(/<code>(.*?)<\/code>/g, '`$1`')
-					.replace(/<[^>]*>/g, ''); // Remove remaining HTML tags
-			}
-
-			// Helper function to parse inline text (bold, italic, links, etc.)
-			function parseInlineText(text: string): TextRun[] {
-				const runs: TextRun[] = [];
-
-				// Simple regex patterns for inline formatting
-				const boldPattern = /\*\*(.+?)\*\*/g;
-				const italicPattern = /\*(.+?)\*/g;
-				const codePattern = /`(.+?)`/g;
-
-				let lastIndex = 0;
-				let segments: {text: string, bold?: boolean, italic?: boolean, code?: boolean}[] = [];
-
-				// Split by bold
-				let match;
-				let tempText = text;
-
-				// Extract bold text
-				while ((match = boldPattern.exec(text)) !== null) {
-					const before = text.substring(lastIndex, match.index);
-					if (before) segments.push({text: before});
-					segments.push({text: match[1], bold: true});
-					lastIndex = match.index + match[0].length;
-				}
-				const remaining = text.substring(lastIndex);
-				if (remaining) segments.push({text: remaining});
-
-				// Process each segment for italic and code
-				const finalRuns: TextRun[] = [];
-				for (const seg of segments) {
-					if (seg.bold) {
-						finalRuns.push(new TextRun({text: seg.text, bold: true}));
-					} else {
-						// Check for italic and code in non-bold segments
-						const italicMatches = seg.text.match(italicPattern);
-						const codeMatches = seg.text.match(codePattern);
-
-						if (italicMatches || codeMatches) {
-							// For simplicity, just handle basic cases
-							const parts = seg.text.split(/(\*[^*]+\*|`[^`]+`)/);
-							for (const part of parts) {
-								if (part.startsWith('*') && part.endsWith('*') && part.length > 2) {
-									finalRuns.push(new TextRun({text: part.slice(1, -1), italics: true}));
-								} else if (part.startsWith('`') && part.endsWith('`') && part.length > 2) {
-									finalRuns.push(new TextRun({text: part.slice(1, -1), font: 'Courier New'}));
-								} else if (part) {
-									finalRuns.push(new TextRun({text: part}));
-								}
-							}
-						} else {
-							finalRuns.push(new TextRun({text: seg.text}));
-						}
-					}
-				}
-
-				return finalRuns.length > 0 ? finalRuns : [new TextRun({text: text})];
-			}
-
-			// Process tokens
-			for (const token of tokens) {
-				switch (token.type) {
-					case 'heading':
-						const headingLevels = [HeadingLevel.HEADING_1, HeadingLevel.HEADING_2, HeadingLevel.HEADING_3, HeadingLevel.HEADING_4, HeadingLevel.HEADING_5, HeadingLevel.HEADING_6];
-						const headingRuns = parseInlineText(token.text);
-						children.push(new Paragraph({
-							children: headingRuns,
-							heading: headingLevels[token.depth - 1] || HeadingLevel.HEADING_1,
-							spacing: { before: 200, after: 100 }
-						}));
-						break;
-
-					case 'paragraph':
-						const runs = parseInlineText(token.text);
-						children.push(new Paragraph({
-							children: runs,
-							spacing: { after: 100 }
-						}));
-						break;
-
-					case 'list':
-						const listItems = token.items || [];
-						for (const item of listItems) {
-							const cellText = htmlToMarkdown(item.text);
-							const runs = parseInlineText(cellText);
-							children.push(new Paragraph({
-								children: runs,
-								bullet: token.ordered ? undefined : { level: 0 },
-								numbering: token.ordered ? { reference: 'default-numbering', level: 0 } : undefined,
-								spacing: { after: 50 }
-							}));
-						}
-						break;
-
-					case 'table':
-						if (token.header && token.rows) {
-							const tableRows: TableRow[] = [];
-
-							// Header row
-							const headerCells = token.header.map((cell: any) => {
-								const cellText = htmlToMarkdown(cell.text);
-								const runs = parseInlineText(cellText);
-								return new TableCell({
-									children: [new Paragraph({
-										children: runs,
-										alignment: AlignmentType.CENTER
-									})],
-									shading: { fill: 'E8E8E8' },
-									width: { size: 100 / token.header.length, type: WidthType.PERCENTAGE }
-								});
-							});
-							tableRows.push(new TableRow({ children: headerCells }));
-
-							// Data rows
-							for (const row of token.rows) {
-								const cells = row.map((cell: any) => {
-									const cellText = htmlToMarkdown(cell.text);
-									const runs = parseInlineText(cellText);
-									return new TableCell({
-										children: [new Paragraph({
-											children: runs
-										})],
-										width: { size: 100 / row.length, type: WidthType.PERCENTAGE }
-									});
-								});
-								tableRows.push(new TableRow({ children: cells }));
-							}
-
-							children.push(new Table({
-								rows: tableRows,
-								width: { size: 100, type: WidthType.PERCENTAGE },
-								borders: {
-									top: { style: BorderStyle.SINGLE, size: 1 },
-									bottom: { style: BorderStyle.SINGLE, size: 1 },
-									left: { style: BorderStyle.SINGLE, size: 1 },
-									right: { style: BorderStyle.SINGLE, size: 1 },
-									insideHorizontal: { style: BorderStyle.SINGLE, size: 1 },
-									insideVertical: { style: BorderStyle.SINGLE, size: 1 }
-								}
-							}));
-						}
-						break;
-
-					case 'code':
-						children.push(new Paragraph({
-							text: token.text,
-							style: 'code',
-							spacing: { before: 100, after: 100 }
-						}));
-						break;
-
-					case 'blockquote':
-						const quoteText = htmlToMarkdown(token.text);
-						const quoteRuns = parseInlineText(quoteText);
-						children.push(new Paragraph({
-							children: quoteRuns,
-							indent: { left: 720 }, // 0.5 inch
-							spacing: { before: 100, after: 100 }
-						}));
-						break;
-
-					case 'space':
-						children.push(new Paragraph({ text: '' }));
-						break;
-				}
-			}
-
-			// Create document
-			const doc = new Document({
-				sections: [{
-					properties: {},
-					children: children
-				}],
-				numbering: {
-					config: [{
-						reference: 'default-numbering',
-						levels: [
-							{
-								level: 0,
-								format: 'decimal',
-								text: '%1.',
-								alignment: AlignmentType.LEFT
-							}
-						]
-					}]
-				}
-			});
-
-			// Generate and download
-			const blob = await Packer.toBlob(doc);
-			const docxFileName = currentFileName.replace(/\.md$/, '') + '.docx';
-			saveAs(blob, docxFileName);
-
-			toastStore.show(`${docxFileName} 다운로드 완료`, 'success');
-			saveStatus = 'saved';
-			closeExportDropdown();
-
-		} catch (error) {
-			console.error('DOCX 생성 중 오류:', error);
-			toastStore.show('DOCX 생성 중 오류가 발생했습니다: ' + (error instanceof Error ? error.message : String(error)), 'error');
-			saveStatus = 'saved';
+	async function handleExportAsDocx() {
+		if (tiptapEditor) {
+			markdownText = (tiptapEditor.storage as any).markdown.getMarkdown();
 		}
+		closeExportDropdown();
+		await exportAsDocx(markdownText, currentFileName);
 	}
 
 	onMount(() => {
 		updatePreview();
-		loadFromLocal(); // Check saved content on page load
+
+		// Handle share link
+		if (isShareLink()) {
+			const shared = decodeShareHash(location.hash);
+			clearShareHash();
+			if (shared !== null) {
+				const { meta } = docStore.createDoc('공유된 문서.md', shared);
+				loadDoc(shared, meta.title, meta.id);
+				showHero = false;
+				toastStore.show('공유 링크로 문서를 열었습니다.', 'info', 5000);
+				tiptapEditor?.commands.setContent(shared);
+				return;
+			}
+		}
+
+		// Init doc store (handles migration from legacy keys)
+		const { content, meta } = docStore.init();
+		if (meta) {
+			loadDoc(content, meta.title, meta.id);
+			showHero = false;
+			if (content) {
+				const savedTime = new Date(meta.updatedAt).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' });
+				toastStore.show(
+					`이전 작업을 불러왔습니다 (${savedTime})`,
+					'info', 6000,
+					{ label: '새 문서로 시작', onClick: newDocument }
+				);
+			}
+		} else {
+			showHero = true;
+		}
 		startAutoSave(); // Start auto-save with 5-minute interval
 		themeStore.init(); // Initialize theme
 		// Initialize Tiptap for the default document mode
@@ -1393,6 +1214,9 @@
 				id="file-input"
 				style="display: none;"
 			>
+			<button on:click={() => showDocList = !showDocList} title="문서 목록" class:active={showDocList}>
+				📋 문서
+			</button>
 			<button on:click={newDocument} title="새 문서 시작">
 				🆕 새 문서
 			</button>
@@ -1417,8 +1241,11 @@
 						<button on:click={exportAsPDF} class="dropdown-item">
 							📄 PDF 문서 (.pdf)
 						</button>
-						<button on:click={exportAsDocx} class="dropdown-item">
-							📘 한글 문서 (.docx)
+						<button on:click={handleExportAsDocx} class="dropdown-item">
+							📘 Word 문서 (.docx)
+						</button>
+						<button on:click={() => { copyShareLink(); closeExportDropdown(); }} class="dropdown-item">
+							🔗 공유 링크 복사
 						</button>
 					</div>
 				{/if}
@@ -1444,6 +1271,17 @@
 			</a>
 		</div>
 	</header>
+
+	<div class="editor-body">
+	{#if showDocList}
+	<DocList
+		activeDocId={activeDocId}
+		onSwitch={switchDocument}
+		onNew={newDocument}
+		onDelete={deleteDocument}
+		onRestore={restoreVersion}
+	/>
+	{/if}
 
 	<main class="main">
 	{#if showHero}
@@ -1695,6 +1533,7 @@
 		<!-- Tiptap 에디터 컨테이너 -->
 		<div bind:this={editorContainer} class="document-view tiptap-container" style="max-width: {WIDTH_MAP[documentWidth]}"></div>
 	</main>
+	</div>
 
 	<!-- Legal Footer -->
 	<footer class="legal-footer">
@@ -1766,6 +1605,17 @@
 		height: 100vh;
 		display: flex;
 		flex-direction: column;
+	}
+
+	.editor-body {
+		display: flex;
+		flex: 1;
+		overflow: hidden;
+	}
+
+	.main {
+		flex: 1;
+		overflow-y: auto;
 	}
 
 	.header {
