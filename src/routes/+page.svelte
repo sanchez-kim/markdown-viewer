@@ -789,7 +789,7 @@
 			tablePickerVisible = true;
 			tablePickerHover = { rows: 0, cols: 0 };
 		}},
-		{ label: '구분선', icon: '—', action: () => tiptapEditor?.chain().focus().setHorizontalRule().run() },
+		{ label: '구분선', icon: '─', action: () => tiptapEditor?.chain().focus().setHorizontalRule().run() },
 	];
 
 	$: filteredSlashCommands = (() => {
@@ -2508,20 +2508,25 @@
 		letter-spacing: 0.05em;
 	}
 	.slash-menu-icon {
-		font-size: 12px;
+		font-size: 13px;
 		font-weight: 700;
 		color: var(--text-tertiary, #888);
-		width: 26px;
-		text-align: center;
+		width: 22px;
+		height: 22px;
+		display: flex;
+		align-items: center;
+		justify-content: center;
 		flex-shrink: 0;
+		line-height: 1;
 	}
 	.slash-menu-item {
 		display: flex;
 		align-items: center;
 		gap: 8px;
+		min-height: 34px;
 		background: transparent;
 		border: none;
-		padding: 8px 10px;
+		padding: 6px 10px;
 		border-radius: 4px;
 		cursor: pointer;
 		font-size: 14px;
