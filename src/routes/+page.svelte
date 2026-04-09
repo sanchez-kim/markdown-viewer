@@ -60,6 +60,7 @@
 	let slashMenuVisible = false;
 	let slashMenuPos = { x: 0, y: 0 };
 	let slashMenuFilter = '';
+	let slashSelectedIndex = 0;
 
 	// ===== TABLE PICKER STATE =====
 	let tablePickerVisible = false;
@@ -652,21 +653,44 @@
 								y: coords.bottom - (containerRect?.top ?? 0) + 8
 							};
 							slashMenuFilter = '';
+							slashSelectedIndex = 0;
 							slashMenuVisible = true;
-							return false; // "/" 문자는 그대로 입력되도록 허용
+							return false;
 						}
 					}
 					// 슬래시 메뉴가 열려 있을 때
 					if (slashMenuVisible) {
 						if (event.key === 'Escape') {
 							slashMenuVisible = false;
-							// "/" 삭제
 							view.dispatch(view.state.tr.delete(view.state.selection.from - 1, view.state.selection.from));
 							return true;
 						}
 						if (event.key === 'Backspace') {
 							slashMenuVisible = false;
 							return false;
+						}
+						if (event.key === 'ArrowDown') {
+							event.preventDefault();
+							slashSelectedIndex = (slashSelectedIndex + 1) % filteredSlashCommands.length;
+							return true;
+						}
+						if (event.key === 'ArrowUp') {
+							event.preventDefault();
+							slashSelectedIndex = (slashSelectedIndex - 1 + filteredSlashCommands.length) % filteredSlashCommands.length;
+							return true;
+						}
+						if (event.key === 'Enter' || event.key === 'Tab') {
+							event.preventDefault();
+							const cmd = filteredSlashCommands[slashSelectedIndex];
+							if (cmd) {
+								if (cmd.label === '표 삽입') {
+									tablePickerVisible = true;
+									tablePickerHover = { rows: 0, cols: 0 };
+								} else {
+									executeSlashCommand(cmd.action);
+								}
+							}
+							return true;
 						}
 					}
 					return false;
@@ -768,9 +792,13 @@
 		{ label: '구분선', icon: '—', action: () => tiptapEditor?.chain().focus().setHorizontalRule().run() },
 	];
 
-	$: filteredSlashCommands = slashCommands.filter(cmd =>
-		cmd.label.toLowerCase().includes(slashMenuFilter.toLowerCase())
-	);
+	$: filteredSlashCommands = (() => {
+		const result = slashCommands.filter(cmd =>
+			cmd.label.toLowerCase().includes(slashMenuFilter.toLowerCase())
+		);
+		slashSelectedIndex = 0;
+		return result;
+	})();
 
 	function insertTableFromPicker(rows: number, cols: number) {
 		if (!tiptapEditor) return;
@@ -1510,17 +1538,27 @@
 						</div>
 					</div>
 				{:else}
-					<div class="slash-menu-header">블록 추가</div>
-					{#each filteredSlashCommands as cmd}
+					<div class="slash-menu-header">블록 추가 <span class="slash-menu-hint">↑↓ 선택, Enter 실행</span></div>
+					{#each filteredSlashCommands as cmd, i}
 						{#if cmd.label === '표 삽입'}
 							<!-- svelte-ignore a11y-click-events-have-key-events -->
-							<button class="slash-menu-item" on:click={() => { tablePickerVisible = true; tablePickerHover = { rows: 0, cols: 0 }; }}>
+							<button
+								class="slash-menu-item"
+								class:active={i === slashSelectedIndex}
+								on:click={() => { tablePickerVisible = true; tablePickerHover = { rows: 0, cols: 0 }; }}
+								on:mouseenter={() => slashSelectedIndex = i}
+							>
 								<span class="slash-menu-icon">{cmd.icon}</span>
 								<span>{cmd.label}</span>
 							</button>
 						{:else}
 							<!-- svelte-ignore a11y-click-events-have-key-events -->
-							<button class="slash-menu-item" on:click={() => executeSlashCommand(cmd.action)}>
+							<button
+								class="slash-menu-item"
+								class:active={i === slashSelectedIndex}
+								on:click={() => executeSlashCommand(cmd.action)}
+								on:mouseenter={() => slashSelectedIndex = i}
+							>
 								<span class="slash-menu-icon">{cmd.icon}</span>
 								<span>{cmd.label}</span>
 							</button>
@@ -2491,8 +2529,13 @@
 		text-align: left;
 		transition: background 0.15s;
 	}
-	.slash-menu-item:hover {
+	.slash-menu-item:hover,
+	.slash-menu-item.active {
 		background: var(--bg-quaternary, #f5f5f5);
+	}
+	.slash-menu-item.active {
+		border-left: 2px solid var(--accent-color, #667eea);
+		padding-left: 8px;
 	}
 
 	/* Table Bubble Menu */
