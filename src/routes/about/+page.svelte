@@ -36,7 +36,7 @@
 
 			<div class="feature">
 				<h3>✏️ WYSIWYG 인터랙티브 편집</h3>
-				<p>마크다운 문법을 입력하면 즉시 서식이 적용됩니다. <code>#</code> → 제목, <code>**텍스트**</code> → <strong>굵게</strong>, <code>- </code> → 글머리 기호로 자동 변환됩니다.</p>
+				<p>마크다운 문법을 입력하면 즉시 서식이 적용됩니다. <code>#</code> → 제목, <code>**텍스트**</code> → <strong>굵게</strong>, <code>-</code> → 글머리 기호로 자동 변환됩니다.</p>
 			</div>
 
 			<div class="feature">
@@ -60,13 +60,23 @@
 			</div>
 
 			<div class="feature">
-				<h3>💾 자동 저장</h3>
-				<p>5분마다 자동으로 저장되며, <code>Ctrl+S</code>로 언제든 수동 저장할 수 있습니다.</p>
+				<h3>📋 다중 문서 관리</h3>
+				<p>헤더의 "문서" 버튼으로 여러 문서를 저장하고 전환할 수 있습니다. 모든 문서는 브라우저에만 저장되며, 문서 목록에서 제목·수정 시각·미리보기를 한눈에 확인할 수 있습니다.</p>
 			</div>
 
 			<div class="feature">
-				<h3>📁 다양한 내보내기</h3>
-				<p>마크다운 파일 (<code>.md</code>), PDF (브라우저 인쇄), Word 문서 (<code>.docx</code>)로 내보낼 수 있습니다.</p>
+				<h3>🕐 버전 이력</h3>
+				<p>저장할 때마다 최대 20개의 스냅샷이 자동으로 기록됩니다. 문서 목록 패널의 "이력" 탭에서 이전 버전을 클릭 한 번으로 복원할 수 있습니다.</p>
+			</div>
+
+			<div class="feature">
+				<h3>🔗 공유 링크</h3>
+				<p>내보내기 메뉴에서 "공유 링크 복사"를 클릭하면 문서 내용이 압축된 URL이 생성됩니다. 백엔드 없이 링크 하나로 문서를 공유할 수 있습니다.</p>
+			</div>
+
+			<div class="feature">
+				<h3>💾 자동 저장 및 내보내기</h3>
+				<p>5분마다 자동으로 저장되며, <code>Ctrl+S</code>로 수동 저장할 수 있습니다. 마크다운 (<code>.md</code>), PDF, Word 문서 (<code>.docx</code>)로 내보낼 수 있습니다.</p>
 			</div>
 
 			<div class="feature">
