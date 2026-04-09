@@ -2491,7 +2491,7 @@
 		padding: 6px;
 		box-shadow: 0 8px 24px rgba(0,0,0,0.14);
 		min-width: 200px;
-		max-height: 320px;
+		max-height: 420px;
 		overflow-y: auto;
 		animation: slashFadeIn 0.12s ease;
 	}
@@ -2611,12 +2611,13 @@
 	}
 	:global(.tiptap-editor-content ul[data-type="taskList"] li) {
 		display: flex;
-		align-items: flex-start;
+		align-items: center;
 		gap: 0.5em;
 	}
 	:global(.tiptap-editor-content ul[data-type="taskList"] li > label) {
 		flex-shrink: 0;
-		margin-top: 0.15em;
+		display: flex;
+		align-items: center;
 	}
 	:global(.tiptap-editor-content ul[data-type="taskList"] li > div) {
 		flex: 1;
