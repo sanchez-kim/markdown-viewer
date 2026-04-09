@@ -782,14 +782,14 @@
 		{ label: '제목 3', icon: 'H3', action: () => tiptapEditor?.chain().focus().toggleHeading({ level: 3 }).run() },
 		{ label: '글머리 기호', icon: '•', action: () => tiptapEditor?.chain().focus().toggleBulletList().run() },
 		{ label: '번호 목록', icon: '1.', action: () => tiptapEditor?.chain().focus().toggleOrderedList().run() },
-		{ label: '체크리스트', icon: '☑', action: () => tiptapEditor?.chain().focus().toggleTaskList().run() },
+		{ label: '체크리스트', icon: '✅', action: () => tiptapEditor?.chain().focus().toggleTaskList().run() },
 		{ label: '코드 블록', icon: '</>', action: () => tiptapEditor?.chain().focus().toggleCodeBlock().run() },
 		{ label: '인용구', icon: '❝', action: () => tiptapEditor?.chain().focus().toggleBlockquote().run() },
 		{ label: '표 삽입', icon: '⊞', action: () => {
 			tablePickerVisible = true;
 			tablePickerHover = { rows: 0, cols: 0 };
 		}},
-		{ label: '구분선', icon: '─', action: () => tiptapEditor?.chain().focus().setHorizontalRule().run() },
+		{ label: '구분선', icon: '➖', action: () => tiptapEditor?.chain().focus().setHorizontalRule().run() },
 	];
 
 	$: filteredSlashCommands = (() => {
