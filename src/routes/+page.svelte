@@ -591,7 +591,7 @@
 						return from !== to;
 					},
 				}),
-				TiptapTable.configure({ resizable: false }),
+				TiptapTable.configure({ resizable: true, handleWidth: 3, lastColumnResizable: false }),
 				TableRowExt,
 				TableHeaderExt,
 				TableCellExt,
@@ -2272,14 +2272,37 @@
 		word-break: break-word;
 		overflow-wrap: break-word;
 	}
-	/* Table cell selection */
+	/* Table cell cursor */
 	:global(.tiptap-editor-content td),
 	:global(.tiptap-editor-content th) {
 		cursor: text;
 	}
+	:global(.tiptap-editor-content.resize-cursor) {
+		cursor: col-resize;
+	}
 	:global(.tiptap-editor-content td p),
 	:global(.tiptap-editor-content th p) {
 		margin: 0;
+	}
+	/* Column resize handle — narrow so it doesn't block text selection */
+	:global(.tiptap-editor-content .column-resize-handle) {
+		position: absolute;
+		right: -1px;
+		top: 0;
+		bottom: 0;
+		width: 3px;
+		background: #3b82f6;
+		opacity: 0;
+		cursor: col-resize;
+		transition: opacity 0.15s;
+		z-index: 10;
+	}
+	:global(.tiptap-editor-content td:hover .column-resize-handle),
+	:global(.tiptap-editor-content th:hover .column-resize-handle) {
+		opacity: 0.5;
+	}
+	:global(.tiptap-editor-content .column-resize-handle:hover) {
+		opacity: 1;
 	}
 	:global(.tiptap-editor-content th) {
 		background: var(--table-header-bg);
