@@ -2272,12 +2272,14 @@
 		word-break: break-word;
 		overflow-wrap: break-word;
 	}
-	/* Table cell cursor — keep text cursor inside cells regardless of resize state */
+	/* Table cell cursor */
 	:global(.tiptap-editor-content td),
-	:global(.tiptap-editor-content th),
-	:global(.tiptap-editor-content.resize-cursor td),
-	:global(.tiptap-editor-content.resize-cursor th) {
+	:global(.tiptap-editor-content th) {
 		cursor: text;
+	}
+	/* When mouse is within handleWidth (3px) of a cell border, show resize cursor */
+	:global(.tiptap-editor-content.resize-cursor) {
+		cursor: col-resize;
 	}
 	:global(.tiptap-editor-content td p),
 	:global(.tiptap-editor-content th p) {
