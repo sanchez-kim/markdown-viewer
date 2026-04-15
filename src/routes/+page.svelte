@@ -591,7 +591,7 @@
 						return from !== to;
 					},
 				}),
-				TiptapTable.configure({ resizable: true, handleWidth: 3, lastColumnResizable: false }),
+				TiptapTable.configure({ resizable: true, handleWidth: 3 }),
 				TableRowExt,
 				TableHeaderExt,
 				TableCellExt,
@@ -2272,13 +2272,12 @@
 		word-break: break-word;
 		overflow-wrap: break-word;
 	}
-	/* Table cell cursor */
+	/* Table cell cursor — keep text cursor inside cells regardless of resize state */
 	:global(.tiptap-editor-content td),
-	:global(.tiptap-editor-content th) {
+	:global(.tiptap-editor-content th),
+	:global(.tiptap-editor-content.resize-cursor td),
+	:global(.tiptap-editor-content.resize-cursor th) {
 		cursor: text;
-	}
-	:global(.tiptap-editor-content.resize-cursor) {
-		cursor: col-resize;
 	}
 	:global(.tiptap-editor-content td p),
 	:global(.tiptap-editor-content th p) {
