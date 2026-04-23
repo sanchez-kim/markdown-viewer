@@ -68,6 +68,22 @@
 
 	// ===== DOCUMENT WIDTH STATE =====
 	let documentWidth: 'normal' | 'wide' | 'full' = 'normal';
+
+	// ===== HEADER AUTO-HIDE STATE =====
+	let headerVisible = true;
+	let headerHideTimer: ReturnType<typeof setTimeout> | null = null;
+	const HEADER_HIDE_DELAY = 4000;
+
+	function onActivityDetected() {
+		headerVisible = true;
+		if (headerHideTimer) clearTimeout(headerHideTimer);
+		headerHideTimer = setTimeout(() => { headerVisible = false; }, HEADER_HIDE_DELAY);
+	}
+
+	function cancelHeaderHide() {
+		headerVisible = true;
+		if (headerHideTimer) clearTimeout(headerHideTimer);
+	}
 	const WIDTH_MAP: Record<string, string> = { normal: '800px', wide: '1100px', full: '100%' };
 
 	// ===== COLOR PICKER STATE =====
@@ -1086,17 +1102,24 @@
 	// Cleanup function to prevent memory leaks
 	onDestroy(() => {
 		destroyTiptap();
-		// Clear imageMap on component destruction
 		imageMap.clear();
-		// Clear debounce timers
 		if (debounceTimer) clearTimeout(debounceTimer);
 		if (previewDebounceTimer) clearTimeout(previewDebounceTimer);
-		// Stop any running intervals
+		if (headerHideTimer) clearTimeout(headerHideTimer);
 		stopAutoSave();
 	});
 </script>
 
-<svelte:window on:click={() => { if (tableMenuOpen) tableMenuOpen = false; }} />
+<svelte:window
+	on:click={() => { if (tableMenuOpen) tableMenuOpen = false; }}
+	on:mousemove={onActivityDetected}
+	on:keydown={(e) => {
+		onActivityDetected();
+		if (e.key === 'Escape' && !slashMenuVisible) {
+			tiptapEditor?.commands.blur();
+		}
+	}}
+/>
 
 <svelte:head>
 	<title>이지 마크다운 - EasyMD | 무료 실시간 마크다운 에디터</title>
@@ -1191,7 +1214,7 @@
 {/if}
 
 <div class="app">
-	<header class="header">
+	<header class="header" class:header-hidden={!headerVisible} on:mouseenter={cancelHeaderHide} on:mouseleave={onActivityDetected}>
 		<div class="title-section">
 			<h1>
 				<img src="/logo.svg" alt="EasyMD Logo" class="logo-icon" />
@@ -1664,7 +1687,17 @@
 		justify-content: space-between;
 		align-items: center;
 		box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-		transition: background-color 0.3s;
+		max-height: 120px;
+		overflow: hidden;
+		transition: background-color 0.3s, max-height 0.35s ease, opacity 0.3s ease, padding 0.35s ease;
+	}
+
+	.header.header-hidden {
+		max-height: 0;
+		padding-top: 0;
+		padding-bottom: 0;
+		opacity: 0;
+		pointer-events: none;
 	}
 
 	.title-section {
