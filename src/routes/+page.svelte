@@ -72,17 +72,28 @@
 	// ===== HEADER AUTO-HIDE STATE =====
 	let headerVisible = true;
 	let headerHideTimer: ReturnType<typeof setTimeout> | null = null;
-	const HEADER_HIDE_DELAY = 4000;
+	const HEADER_HIDE_DELAY = 3000;
+	const HEADER_SHOW_ZONE = 56; // px from top of viewport
 
-	function onActivityDetected() {
-		headerVisible = true;
+	function startHideTimer() {
 		if (headerHideTimer) clearTimeout(headerHideTimer);
 		headerHideTimer = setTimeout(() => { headerVisible = false; }, HEADER_HIDE_DELAY);
 	}
 
+	function onMouseMove(e: MouseEvent) {
+		if (e.clientY <= HEADER_SHOW_ZONE) {
+			// 상단 영역 → 헤더 표시하고 타이머 취소
+			headerVisible = true;
+			if (headerHideTimer) { clearTimeout(headerHideTimer); headerHideTimer = null; }
+		} else if (headerVisible && !headerHideTimer) {
+			// 상단 아님 + 헤더 보이는 중 + 타이머 없음 → 타이머 시작
+			startHideTimer();
+		}
+	}
+
 	function cancelHeaderHide() {
 		headerVisible = true;
-		if (headerHideTimer) clearTimeout(headerHideTimer);
+		if (headerHideTimer) { clearTimeout(headerHideTimer); headerHideTimer = null; }
 	}
 	const WIDTH_MAP: Record<string, string> = { normal: '800px', wide: '1100px', full: '100%' };
 
@@ -1112,9 +1123,8 @@
 
 <svelte:window
 	on:click={() => { if (tableMenuOpen) tableMenuOpen = false; }}
-	on:mousemove={onActivityDetected}
+	on:mousemove={onMouseMove}
 	on:keydown={(e) => {
-		onActivityDetected();
 		if (e.key === 'Escape' && !slashMenuVisible) {
 			tiptapEditor?.commands.blur();
 		}
@@ -1214,7 +1224,7 @@
 {/if}
 
 <div class="app">
-	<header class="header" class:header-hidden={!headerVisible} on:mouseenter={cancelHeaderHide} on:mouseleave={onActivityDetected}>
+	<header class="header" class:header-hidden={!headerVisible} on:mouseenter={cancelHeaderHide} on:mouseleave={startHideTimer}>
 		<div class="title-section">
 			<h1>
 				<img src="/logo.svg" alt="EasyMD Logo" class="logo-icon" />
