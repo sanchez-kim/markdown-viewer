@@ -677,13 +677,19 @@
 					class: 'tiptap-editor-content',
 				},
 				clipboardTextSerializer: (slice) => {
-					// 테이블 셀 복사 시 HTML 태그 대신 순수 텍스트 반환
-					const div = document.createElement('div');
-					const schema = tiptapEditor!.schema;
-					const ser = PMDOMSerializer.fromSchema(schema);
-					const dom = ser.serializeFragment(slice.content);
-					div.appendChild(dom);
-					return div.textContent || '';
+					// 마크다운으로 직렬화. 표 부분 선택 시 serializer가 HTML로 fallback하면
+					// 텍스트만 추출해서 반환 (태그가 그대로 복사되는 문제 방지)
+					if (!tiptapEditor) return '';
+					const serializer = (tiptapEditor.storage as any).markdown?.serializer;
+					let md = '';
+					try { md = serializer ? serializer.serialize(slice.content) : ''; } catch { md = ''; }
+					if (!md || /<(td|th|tr|table|thead|tbody)\b/i.test(md)) {
+						const div = document.createElement('div');
+						const ser = PMDOMSerializer.fromSchema(tiptapEditor.schema);
+						div.appendChild(ser.serializeFragment(slice.content));
+						return div.textContent || md;
+					}
+					return md;
 				},
 				handleKeyDown: (view, event) => {
 					// "/" 입력 시 slash command 메뉴 표시
