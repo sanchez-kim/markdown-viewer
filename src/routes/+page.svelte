@@ -765,15 +765,15 @@
 							return true;
 						}
 						// When HTML is present (VS Code, browser, etc.), ProseMirror prefers
-						// the styled HTML. Fix: take plain text (raw markdown), convert via
-						// marked(), then parse with ProseMirror's DOMParser directly.
+						// the styled HTML. Fix: take plain text (raw markdown) and parse via
+						// tiptap-markdown's parser so task-lists/tables are recognized.
 						const types = clipboardData?.types ?? [];
 						if (types.includes('text/html') && types.includes('text/plain')) {
 							const text = clipboardData!.getData('text/plain');
 							if (text && tiptapEditor) {
 								event.preventDefault();
-								const raw = marked(text) as string;
-								const html = browser ? DOMPurify.sanitize(raw) : raw;
+								const parsed = (tiptapEditor.storage as any).markdown.parser.parse(text) as string;
+								const html = browser ? DOMPurify.sanitize(parsed) : parsed;
 								const el = document.createElement('div');
 								el.innerHTML = html;
 								const { view } = tiptapEditor;
