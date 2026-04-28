@@ -13,7 +13,7 @@
 	import { pushHistory, getHistory } from '$lib/stores/history';
 	import { encodeShareLink, decodeShareHash, isShareLink, clearShareHash, getShareLinkWarning } from '$lib/utils/shareLink';
 	import DocList from '$lib/components/DocList.svelte';
-	import { Editor } from '@tiptap/core';
+	import { Editor, Extension, InputRule } from '@tiptap/core';
 	import { DOMParser as PMDOMParser, DOMSerializer as PMDOMSerializer } from '@tiptap/pm/model';
 	import StarterKit from '@tiptap/starter-kit';
 	import Image from '@tiptap/extension-image';
@@ -624,6 +624,25 @@
 				TableCellExt,
 				TaskList,
 				TaskItem.configure({ nested: true }),
+				Extension.create({
+					name: 'taskListShortcut',
+					addInputRules() {
+						return [
+							// "[] ", "[ ] ", "[x] " at start of paragraph or inside any list
+							new InputRule({
+								find: /^\s*(\[([ xX])?\])\s$/,
+								handler: ({ range, match, chain }) => {
+									const checked = match[2]?.toLowerCase() === 'x';
+									chain()
+										.deleteRange(range)
+										.toggleList('taskList', 'taskItem')
+										.updateAttributes('taskItem', { checked })
+										.run();
+								},
+							}),
+						];
+					},
+				}),
 				Placeholder.configure({
 					placeholder: '여기를 클릭하여 작성을 시작하세요... (/ 를 입력하면 블록을 추가할 수 있어요)',
 				}),
