@@ -677,19 +677,33 @@
 					class: 'tiptap-editor-content',
 				},
 				clipboardTextSerializer: (slice) => {
-					// 마크다운으로 직렬화. 표 부분 선택 시 serializer가 HTML로 fallback하면
-					// 텍스트만 추출해서 반환 (태그가 그대로 복사되는 문제 방지)
 					if (!tiptapEditor) return '';
+					// 표 셀 내부 부분 선택만 plain text로 (HTML 태그가 따라붙는 것 방지)
+					const sel = tiptapEditor.state.selection;
+					const $from = sel.$from;
+					for (let d = $from.depth; d > 0; d--) {
+						const name = $from.node(d).type.name;
+						if (name === 'tableCell' || name === 'tableHeader') {
+							if (sel.from >= $from.start(d) && sel.to <= $from.end(d)) {
+								const div = document.createElement('div');
+								const ser = PMDOMSerializer.fromSchema(tiptapEditor.schema);
+								div.appendChild(ser.serializeFragment(slice.content));
+								return div.textContent || '';
+							}
+							break;
+						}
+					}
+					// 그 외 → tiptap-markdown serializer로 마크다운 출력
 					const serializer = (tiptapEditor.storage as any).markdown?.serializer;
-					let md = '';
-					try { md = serializer ? serializer.serialize(slice.content) : ''; } catch { md = ''; }
-					if (!md || /<(td|th|tr|table|thead|tbody)\b/i.test(md)) {
+					if (!serializer) return '';
+					try {
+						return serializer.serialize(slice.content);
+					} catch {
 						const div = document.createElement('div');
 						const ser = PMDOMSerializer.fromSchema(tiptapEditor.schema);
 						div.appendChild(ser.serializeFragment(slice.content));
-						return div.textContent || md;
+						return div.textContent || '';
 					}
-					return md;
 				},
 				handleKeyDown: (view, event) => {
 					// "/" 입력 시 slash command 메뉴 표시
