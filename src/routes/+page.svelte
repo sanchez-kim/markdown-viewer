@@ -1314,6 +1314,7 @@
 				id="file-input"
 				style="display: none;"
 			>
+			<a href="/blog" class="nav-link-btn">블로그</a>
 			<button on:click={() => showDocList = !showDocList} title="문서 목록" class:active={showDocList}>
 				📋 문서
 			</button>
@@ -1649,6 +1650,8 @@
 	<footer class="legal-footer">
 		<div class="footer-content">
 			<div class="footer-links">
+				<a href="/blog">블로그</a>
+				<span class="separator">|</span>
 				<a href="/about">소개</a>
 				<span class="separator">|</span>
 				<a href="/privacy">개인정보처리방침</a>
@@ -1870,6 +1873,20 @@
 		background: #2980b9;
 	}
 
+	.nav-link-btn {
+		background: rgba(255,255,255,0.15);
+		color: white;
+		border: 1px solid rgba(255,255,255,0.3);
+		padding: 0.5rem 1rem;
+		border-radius: 4px;
+		font-size: 0.9rem;
+		text-decoration: none;
+		transition: background 0.2s;
+	}
+
+	.nav-link-btn:hover {
+		background: rgba(255,255,255,0.25);
+	}
 
 	.theme-button {
 		transition: all 0.3s ease;
