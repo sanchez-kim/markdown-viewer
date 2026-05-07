@@ -1729,16 +1729,16 @@
 	}
 
 	.header {
-		background: var(--bg-header);
+		background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
 		color: white;
 		padding: 1rem 2rem;
 		display: flex;
 		justify-content: space-between;
 		align-items: center;
-		box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+		box-shadow: 0 2px 8px rgba(102,126,234,0.3);
 		max-height: 120px;
 		overflow: hidden;
-		transition: background-color 0.3s, max-height 0.35s ease, opacity 0.3s ease, padding 0.35s ease;
+		transition: max-height 0.35s ease, opacity 0.3s ease, padding 0.35s ease;
 	}
 
 	.header.header-hidden {
@@ -2222,11 +2222,11 @@
 
 	/* Legal Footer */
 	.legal-footer {
-		background: var(--bg-header);
-		color: var(--text-tertiary);
+		background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+		color: rgba(255,255,255,0.75);
 		padding: 1.5rem 2rem;
-		border-top: 1px solid var(--border-color);
-		transition: background-color 0.3s, color 0.3s;
+		border-top: none;
+		transition: color 0.3s;
 	}
 
 	.footer-content {
