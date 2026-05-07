@@ -173,6 +173,7 @@
 		</section>
 
 		<div class="back-link">
+			<a href="/blog">블로그 →</a>
 			<a href="/">← 에디터로 돌아가기</a>
 		</div>
 	</div>
@@ -507,6 +508,9 @@
 		margin-top: 2rem;
 		padding-top: 2rem;
 		border-top: 1px solid var(--border-color, #ddd);
+		display: flex;
+		gap: 1.5rem;
+		justify-content: space-between;
 	}
 
 	.back-link a {
