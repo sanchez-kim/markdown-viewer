@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import { themeStore } from '$lib/stores/theme';
+	import { SITE_URL } from '$lib/config';
 
 	const jsExample = "const greet = (name) => {\n  return `Hello, ${name}!`;\n};";
 	const pyExample = 'def greet(name):\n    return f"Hello, {name}!"';
@@ -18,7 +19,7 @@
 	<meta name="keywords" content="마크다운 문법, markdown 사용법, 마크다운 예시, 마크다운 표, 마크다운 코드블록" />
 	<meta property="og:title" content="마크다운 문법 가이드 — EasyMD" />
 	<meta property="og:description" content="마크다운 문법 완전 가이드. 헤더부터 표까지 예시와 함께 배우세요." />
-	<meta property="og:url" content="https://easymd.netlify.app/guide" />
+	<meta property="og:url" content="{SITE_URL}/guide" />
 	<meta property="og:type" content="article" />
 </svelte:head>
 

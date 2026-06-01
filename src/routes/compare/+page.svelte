@@ -1,9 +1,13 @@
+<script lang="ts">
+	import { SITE_URL } from '$lib/config';
+</script>
+
 <svelte:head>
 	<title>EasyMD vs 노션·Typora·Obsidian — 마크다운 에디터 비교</title>
 	<meta name="description" content="EasyMD와 Notion, Typora, Obsidian, HackMD를 비교합니다. 완전 무료, 로그인 불필요, 즉시 사용 가능한 마크다운 에디터를 찾는다면 EasyMD를 확인하세요." />
 	<meta property="og:title" content="EasyMD vs 노션·Typora·Obsidian — 마크다운 에디터 비교" />
 	<meta property="og:description" content="EasyMD와 Notion, Typora, Obsidian, HackMD를 비교합니다. 완전 무료, 로그인 불필요, 즉시 사용 가능한 마크다운 에디터." />
-	<meta property="og:url" content="https://easymd.netlify.app/compare" />
+	<meta property="og:url" content="{SITE_URL}/compare" />
 	<meta property="og:type" content="article" />
 </svelte:head>
 

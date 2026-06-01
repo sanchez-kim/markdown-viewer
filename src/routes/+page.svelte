@@ -5,6 +5,7 @@
 	import 'highlight.js/styles/github.min.css';
 	import DOMPurify from 'dompurify';
 	import { browser } from '$app/environment';
+	import { SITE_URL } from '$lib/config';
 	import Toast from '$lib/components/Toast.svelte';
 	import { toastStore } from '$lib/stores/toast';
 	import { themeStore } from '$lib/stores/theme';
@@ -1180,24 +1181,24 @@
 
 	<!-- Open Graph / Facebook -->
 	<meta property="og:type" content="website" />
-	<meta property="og:url" content="https://easymd.netlify.app/" />
+	<meta property="og:url" content="{SITE_URL}/" />
 	<meta property="og:title" content="이지 마크다운 - EasyMD | 무료 실시간 마크다운 에디터" />
 	<meta property="og:description" content="브라우저에서 바로 사용하는 무료 마크다운 에디터. 실시간 미리보기, 자동 저장, PDF 내보내기 지원." />
-	<meta property="og:image" content="https://easymd.netlify.app/og-image.png" />
+	<meta property="og:image" content="{SITE_URL}/og-image.png" />
 
 	<!-- Twitter -->
 	<meta property="twitter:card" content="summary_large_image" />
-	<meta property="twitter:url" content="https://easymd.netlify.app/" />
+	<meta property="twitter:url" content="{SITE_URL}/" />
 	<meta property="twitter:title" content="이지 마크다운 - EasyMD | 무료 실시간 마크다운 에디터" />
 	<meta property="twitter:description" content="브라우저에서 바로 사용하는 무료 마크다운 에디터. 실시간 미리보기, 자동 저장, PDF 내보내기 지원." />
-	<meta property="twitter:image" content="https://easymd.netlify.app/og-image.png" />
+	<meta property="twitter:image" content="{SITE_URL}/og-image.png" />
 
 	<!-- JSON-LD 구조화 데이터 -->
 	{@html `<script type="application/ld+json">${JSON.stringify({
 		"@context": "https://schema.org",
 		"@type": "WebApplication",
 		"name": "이지 마크다운 (EasyMD)",
-		"url": "https://easymd.netlify.app",
+		"url": SITE_URL,
 		"description": "브라우저에서 바로 사용하는 무료 마크다운 에디터. 실시간 미리보기, 자동 저장, PDF 내보내기 지원. 로그인 불필요.",
 		"applicationCategory": "ProductivityApplication",
 		"operatingSystem": "Web Browser",
@@ -1645,11 +1646,64 @@
 	</main>
 	</div>
 
+	<!-- SEO 콘텐츠 섹션 (정적 prerender — 크롤러/사용자용 본문) -->
+	<section class="seo-content" aria-label="이지 마크다운 소개">
+		<div class="seo-inner">
+			<h2>EasyMD — 브라우저에서 바로 쓰는 무료 마크다운 에디터</h2>
+			<p>
+				이지 마크다운(EasyMD)은 설치나 로그인 없이 웹 브라우저에서 바로 사용하는 무료 마크다운 에디터입니다.
+				글을 입력하면 노션처럼 곧바로 예쁘게 정리되어 보이고, 작성한 문서는 자동으로 저장됩니다.
+				완성한 글은 마크다운(.md), PDF, 워드(.docx) 파일로 내보낼 수 있어 README 작성, 회의록, 블로그 초안,
+				기술 문서 등 어떤 글쓰기에도 활용할 수 있습니다. 모든 데이터는 서버로 전송되지 않고 내 브라우저에만
+				저장되므로 개인정보 걱정 없이 안심하고 사용할 수 있습니다.
+			</p>
+
+			<h3>마크다운이란?</h3>
+			<p>
+				마크다운(Markdown)은 2004년 존 그루버가 만든 경량 마크업 언어로, HTML처럼 복잡한 태그 없이 <code>#</code>,
+				<code>*</code>, <code>-</code> 같은 간단한 기호만으로 제목·목록·강조·표·코드 블록 등 서식을 표현합니다.
+				작성한 텍스트가 그대로 읽히면서도 변환하면 깔끔한 문서가 되기 때문에, 오늘날 GitHub, Notion, Slack,
+				Tistory, Velog, Obsidian 등 수많은 플랫폼이 마크다운을 표준 문서 형식으로 채택하고 있습니다.
+			</p>
+
+			<h3>주요 기능</h3>
+			<ul class="seo-features">
+				<li><strong>실시간 미리보기</strong> — 입력과 동시에 서식이 적용되어 결과를 바로 확인합니다.</li>
+				<li><strong>자동 저장</strong> — 작성 중인 문서가 브라우저에 자동으로 보관되어 새로고침해도 사라지지 않습니다.</li>
+				<li><strong>다양한 내보내기</strong> — 마크다운, PDF, 워드(DOCX) 형식으로 한 번에 변환·다운로드합니다.</li>
+				<li><strong>표·체크리스트·코드 강조</strong> — 표 편집, 할 일 목록, 200여 개 언어의 코드 문법 강조를 지원합니다.</li>
+				<li><strong>다크 모드</strong> — 눈이 편한 어두운 테마로 장시간 작업에도 부담이 적습니다.</li>
+				<li><strong>개인정보 보호</strong> — 로그인이 필요 없고, 문서는 서버가 아닌 내 컴퓨터에만 저장됩니다.</li>
+			</ul>
+
+			<h3>이런 분께 추천합니다</h3>
+			<ul class="seo-features">
+				<li>GitHub README나 오픈소스 문서를 깔끔하게 작성하려는 개발자</li>
+				<li>회의록·업무 문서·기획서를 빠르게 정리하려는 직장인</li>
+				<li>Tistory·Velog·브런치에 올릴 블로그 글 초안을 잡는 작가·블로거</li>
+				<li>강의 노트나 과제를 구조적으로 정리하려는 학생</li>
+			</ul>
+
+			<h3>더 알아보기</h3>
+			<nav class="seo-links" aria-label="콘텐츠 둘러보기">
+				<a href="/guide">마크다운 문법 가이드</a>
+				<a href="/templates">마크다운 템플릿 모음</a>
+				<a href="/use-cases">활용 사례</a>
+				<a href="/compare">에디터 비교 (노션·Typora·Obsidian)</a>
+				<a href="/shortcuts">단축키 모음</a>
+				<a href="/blog">마크다운 블로그</a>
+				<a href="/faq">자주 묻는 질문</a>
+			</nav>
+		</div>
+	</section>
+
 	<!-- Legal Footer -->
 	<footer class="legal-footer">
 		<div class="footer-content">
 			<div class="footer-links">
 				<a href="/about">소개</a>
+				<span class="separator">|</span>
+				<a href="/guide">가이드</a>
 				<span class="separator">|</span>
 				<a href="/blog">블로그</a>
 				<span class="separator">|</span>
@@ -1660,7 +1714,7 @@
 				<a href="https://github.com/sanchez-kim/markdown-viewer" target="_blank" rel="noopener">GitHub</a>
 			</div>
 			<div class="footer-copyright">
-				© 2025 이지 마크다운 (EasyMD)
+				© 2026 이지 마크다운 (EasyMD)
 			</div>
 		</div>
 	</footer>
@@ -2269,6 +2323,115 @@
 		color: rgba(255, 255, 255, 0.6);
 		font-size: 0.85rem;
 		text-align: center;
+	}
+
+	/* ===== SEO CONTENT SECTION ===== */
+	.seo-content {
+		background: #f8f9fb;
+		color: #2d2d35;
+		padding: 3rem 2rem;
+		border-top: 1px solid #e6e8ee;
+	}
+
+	.seo-inner {
+		max-width: 820px;
+		margin: 0 auto;
+		line-height: 1.75;
+	}
+
+	.seo-inner h2 {
+		font-size: 1.6rem;
+		margin: 0 0 1rem;
+		background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+		-webkit-background-clip: text;
+		background-clip: text;
+		-webkit-text-fill-color: transparent;
+	}
+
+	.seo-inner h3 {
+		font-size: 1.2rem;
+		margin: 2rem 0 0.75rem;
+		color: #1f2330;
+	}
+
+	.seo-inner p {
+		margin: 0 0 1rem;
+		color: #44485a;
+	}
+
+	.seo-inner code {
+		background: #eceef5;
+		padding: 0.1em 0.35em;
+		border-radius: 4px;
+		font-size: 0.9em;
+	}
+
+	.seo-features {
+		margin: 0;
+		padding-left: 1.25rem;
+		color: #44485a;
+	}
+
+	.seo-features li {
+		margin-bottom: 0.5rem;
+	}
+
+	.seo-links {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 0.6rem 0.75rem;
+	}
+
+	.seo-links a {
+		display: inline-block;
+		padding: 0.45rem 0.9rem;
+		background: #fff;
+		border: 1px solid #d9dce6;
+		border-radius: 999px;
+		color: #5a4bb5;
+		text-decoration: none;
+		font-size: 0.9rem;
+		transition: all 0.2s;
+	}
+
+	.seo-links a:hover {
+		border-color: #764ba2;
+		color: #764ba2;
+		box-shadow: 0 2px 8px rgba(118, 75, 162, 0.15);
+	}
+
+	:global(html.dark) .seo-content {
+		background: #1a1b22;
+		color: #d6d8e0;
+		border-top-color: #2c2e38;
+	}
+
+	:global(html.dark) .seo-inner h3 {
+		color: #e8eaf0;
+	}
+
+	:global(html.dark) .seo-inner p,
+	:global(html.dark) .seo-features {
+		color: #b4b7c4;
+	}
+
+	:global(html.dark) .seo-inner code {
+		background: #2c2e38;
+	}
+
+	:global(html.dark) .seo-links a {
+		background: #23252e;
+		border-color: #363945;
+		color: #a99cf0;
+	}
+
+	@media (max-width: 640px) {
+		.seo-content {
+			padding: 2rem 1.25rem;
+		}
+		.seo-inner h2 {
+			font-size: 1.35rem;
+		}
 	}
 
 	/* ===== TIPTAP EDITOR STYLES ===== */
@@ -2895,7 +3058,7 @@
 		letter-spacing: 0.02em;
 	}
 
-	:global(.dark) .hero-badge {
+	:global(html.dark) .hero-badge {
 		background: #1a3a52;
 		color: #74b9d8;
 	}

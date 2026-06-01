@@ -3,10 +3,14 @@
 	import { themeStore } from '$lib/stores/theme';
 
 	onMount(() => {
-		document.title = '이용약관 - 이지 마크다운';
 		themeStore.init();
 	});
 </script>
+
+<svelte:head>
+	<title>이용약관 - 이지 마크다운 (EasyMD)</title>
+	<meta name="description" content="이지 마크다운(EasyMD) 서비스 이용약관입니다. 무료 웹 기반 마크다운 에디터 이용 시 적용되는 조건과 책임 범위를 안내합니다." />
+</svelte:head>
 
 <div class="legal-page">
 	<div class="container">

@@ -1,9 +1,13 @@
+<script lang="ts">
+	import { SITE_URL } from '$lib/config';
+</script>
+
 <svelte:head>
 	<title>EasyMD 활용 사례 — 마크다운 에디터 활용법</title>
 	<meta name="description" content="개발자 TIL, 기술 블로그 초안, README, API 문서, 회의록까지. EasyMD로 마크다운을 활용하는 다양한 실전 사례를 소개합니다." />
 	<meta property="og:title" content="EasyMD 활용 사례 — 마크다운 에디터 활용법" />
 	<meta property="og:description" content="개발자 TIL, 기술 블로그 초안, README, API 문서, 회의록까지. EasyMD로 마크다운을 활용하는 다양한 실전 사례를 소개합니다." />
-	<meta property="og:url" content="https://easymd.netlify.app/use-cases" />
+	<meta property="og:url" content="{SITE_URL}/use-cases" />
 	<meta property="og:type" content="article" />
 </svelte:head>
 

@@ -25,5 +25,8 @@ vite.config.ts.timestamp-*
 # temp
 temp/
 
+# Serena MCP cache
+.serena/
+
 # Tauri (standalone branch only)
 src-tauri/

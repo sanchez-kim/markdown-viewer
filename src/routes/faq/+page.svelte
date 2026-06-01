@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
+	import { SITE_URL } from '$lib/config';
 
 	const faqs = [
 		{
@@ -61,7 +62,7 @@
 	<meta name="description" content="EasyMD에 대해 자주 묻는 질문과 답변입니다. 무료 여부, 로그인, 데이터 저장, 오프라인 사용, 내보내기 등을 확인하세요." />
 	<meta property="og:title" content="자주 묻는 질문 — EasyMD" />
 	<meta property="og:description" content="EasyMD에 대해 자주 묻는 질문과 답변입니다. 무료 여부, 로그인, 데이터 저장, 오프라인 사용, 내보내기 등을 확인하세요." />
-	<meta property="og:url" content="https://easymd.netlify.app/faq" />
+	<meta property="og:url" content="{SITE_URL}/faq" />
 	<meta property="og:type" content="article" />
 	<!-- FAQ JSON-LD Schema -->
 	{@html `<script type="application/ld+json">${jsonLd}<\/script>`}

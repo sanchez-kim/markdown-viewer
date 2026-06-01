@@ -1,9 +1,13 @@
+<script lang="ts">
+	import { SITE_URL } from '$lib/config';
+</script>
+
 <svelte:head>
 	<title>업데이트 내역 — EasyMD</title>
 	<meta name="description" content="EasyMD의 버전별 업데이트 내역입니다. 새로운 기능, 개선 사항, 버그 수정 내용을 확인하세요." />
 	<meta property="og:title" content="업데이트 내역 — EasyMD" />
 	<meta property="og:description" content="EasyMD의 버전별 업데이트 내역입니다. 새로운 기능, 개선 사항, 버그 수정 내용을 확인하세요." />
-	<meta property="og:url" content="https://easymd.netlify.app/changelog" />
+	<meta property="og:url" content="{SITE_URL}/changelog" />
 	<meta property="og:type" content="article" />
 </svelte:head>
 

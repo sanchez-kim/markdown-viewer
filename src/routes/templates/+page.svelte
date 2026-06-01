@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import { themeStore } from '$lib/stores/theme';
+	import { SITE_URL } from '$lib/config';
 
 	onMount(() => {
 		document.title = '마크다운 템플릿 모음 - 이지 마크다운';
@@ -537,7 +538,7 @@ function example() {
 	<meta name="keywords" content="마크다운 템플릿, readme 템플릿, 마크다운 회의록, 블로그 포스트 템플릿, TIL 템플릿, API 문서 템플릿" />
 	<meta property="og:title" content="마크다운 템플릿 모음 — EasyMD" />
 	<meta property="og:description" content="바로 쓸 수 있는 마크다운 템플릿 6종. TIL부터 GitHub README까지 무료 제공." />
-	<meta property="og:url" content="https://easymd.netlify.app/templates" />
+	<meta property="og:url" content="{SITE_URL}/templates" />
 	<meta property="og:type" content="article" />
 </svelte:head>
 

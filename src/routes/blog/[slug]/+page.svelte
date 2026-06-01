@@ -2,6 +2,7 @@
 	import { page } from '$app/state';
 	import { getPost, posts } from '$lib/data/posts';
 	import { error } from '@sveltejs/kit';
+	import { SITE_URL } from '$lib/config';
 
 	const slug = $derived(page.params.slug);
 	const post = $derived(getPost(slug));
@@ -26,7 +27,27 @@
 		<meta property="og:title" content={post.title} />
 		<meta property="og:description" content={post.excerpt} />
 		<meta property="og:type" content="article" />
+		<meta property="og:url" content={`${SITE_URL}/blog/${post.slug}`} />
+		<meta property="og:image" content={`${SITE_URL}/og-image.png`} />
 		<meta property="article:published_time" content={post.date} />
+		<link rel="canonical" href={`${SITE_URL}/blog/${post.slug}`} />
+		{@html `<script type="application/ld+json">${JSON.stringify({
+			"@context": "https://schema.org",
+			"@type": "BlogPosting",
+			"headline": post.title,
+			"description": post.excerpt,
+			"datePublished": post.date,
+			"dateModified": post.date,
+			"author": { "@type": "Person", "name": "Sanchez Kim" },
+			"publisher": {
+				"@type": "Organization",
+				"name": "이지 마크다운 (EasyMD)",
+				"logo": { "@type": "ImageObject", "url": `${SITE_URL}/logo.svg` }
+			},
+			"mainEntityOfPage": { "@type": "WebPage", "@id": `${SITE_URL}/blog/${post.slug}` },
+			"image": `${SITE_URL}/og-image.png`,
+			"inLanguage": "ko"
+		})}<\/script>`}
 	{/if}
 </svelte:head>
 
