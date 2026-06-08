@@ -1822,7 +1822,6 @@
 		align-items: center;
 		box-shadow: 0 2px 8px rgba(102,126,234,0.3);
 		max-height: 240px;
-		overflow: hidden;
 		transition: max-height 0.35s ease, opacity 0.3s ease, padding 0.35s ease;
 	}
 
@@ -1833,6 +1832,7 @@
 	}
 
 	.header.header-hidden {
+		overflow: hidden;
 		max-height: 0;
 		padding-top: 0;
 		padding-bottom: 0;
