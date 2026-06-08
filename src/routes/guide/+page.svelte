@@ -89,14 +89,14 @@
 			<div class="example-grid">
 				<div class="example-col">
 					<div class="example-label">마크다운 원문</div>
-					<pre><code>[EasyMD 바로가기](https://easymd.netlify.app)
+					<pre><code>[EasyMD 바로가기](https://easy-md.com)
 [상대 경로 링크](/guide)
 [제목 있는 링크](https://example.com "설명 텍스트")</code></pre>
 				</div>
 				<div class="example-col">
 					<div class="example-label">렌더링 결과</div>
 					<div class="render-box">
-						<p><a href="https://easymd.netlify.app" target="_blank" rel="noopener">EasyMD 바로가기</a></p>
+						<p><a href="https://easy-md.com" target="_blank" rel="noopener">EasyMD 바로가기</a></p>
 						<p><a href="/guide">상대 경로 링크</a></p>
 						<p><a href="https://example.com" title="설명 텍스트">제목 있는 링크</a></p>
 					</div>
@@ -112,7 +112,7 @@
 				<div class="example-col">
 					<div class="example-label">마크다운 원문</div>
 					<pre><code>![대체 텍스트](이미지-URL)
-![EasyMD 로고](https://easymd.netlify.app/logo.svg)</code></pre>
+![EasyMD 로고](https://easy-md.com/logo.svg)</code></pre>
 				</div>
 				<div class="example-col">
 					<div class="example-label">렌더링 결과</div>

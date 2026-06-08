@@ -53,7 +53,7 @@ export const posts: Post[] = [
 
 <h2>링크와 이미지</h2>
 <p>링크는 대괄호 안에 텍스트, 소괄호 안에 URL을 씁니다.</p>
-<pre><code>[이지 마크다운](https://easymd.netlify.app)
+<pre><code>[이지 마크다운](https://easy-md.com)
 [이메일 보내기](mailto:example@email.com)</code></pre>
 <p>이미지는 링크 문법 앞에 <code>!</code>를 붙입니다. 대괄호 안은 대체 텍스트(alt text)입니다.</p>
 <pre><code>![로고 이미지](https://example.com/logo.png)
@@ -707,9 +707,9 @@ npm run dev
 		content: `
 <h2>기본 링크 문법</h2>
 <p>링크는 대괄호 안에 보일 텍스트, 소괄호 안에 주소를 적습니다.</p>
-<pre><code>[이지 마크다운](https://easymd.netlify.app)</code></pre>
+<pre><code>[이지 마크다운](https://easy-md.com)</code></pre>
 <p>제목(title)을 추가하면 마우스를 올렸을 때 설명이 뜹니다.</p>
-<pre><code>[이지 마크다운](https://easymd.netlify.app "무료 마크다운 에디터")</code></pre>
+<pre><code>[이지 마크다운](https://easy-md.com "무료 마크다운 에디터")</code></pre>
 <p>이메일이나 전화 링크도 만들 수 있습니다: <code>[메일 보내기](mailto:hello@example.com)</code></p>
 
 <h2>참조 링크(Reference Link)</h2>
