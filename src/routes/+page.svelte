@@ -72,16 +72,20 @@
 
 	// ===== HEADER AUTO-HIDE STATE =====
 	let headerVisible = true;
+	let headerAutoHide = false; // 기본값: 헤더 항상 표시. 사용자가 토글로 자동 숨김을 켤 수 있음
 	let headerHideTimer: ReturnType<typeof setTimeout> | null = null;
 	const HEADER_HIDE_DELAY = 3000;
 	const HEADER_SHOW_ZONE = 56; // px from top of viewport
+	const HEADER_AUTOHIDE_KEY = 'easymd-header-autohide';
 
 	function startHideTimer() {
+		if (!headerAutoHide) return;
 		if (headerHideTimer) clearTimeout(headerHideTimer);
 		headerHideTimer = setTimeout(() => { headerVisible = false; }, HEADER_HIDE_DELAY);
 	}
 
 	function onMouseMove(e: MouseEvent) {
+		if (!headerAutoHide) return;
 		if (e.clientY <= HEADER_SHOW_ZONE) {
 			// 상단 영역 → 헤더 표시하고 타이머 취소
 			headerVisible = true;
@@ -93,8 +97,20 @@
 	}
 
 	function cancelHeaderHide() {
+		if (!headerAutoHide) return;
 		headerVisible = true;
 		if (headerHideTimer) { clearTimeout(headerHideTimer); headerHideTimer = null; }
+	}
+
+	function toggleHeaderAutoHide() {
+		headerAutoHide = !headerAutoHide;
+		if (browser) localStorage.setItem(HEADER_AUTOHIDE_KEY, headerAutoHide ? '1' : '0');
+		if (headerAutoHide) {
+			startHideTimer();
+		} else {
+			headerVisible = true;
+			if (headerHideTimer) { clearTimeout(headerHideTimer); headerHideTimer = null; }
+		}
 	}
 	const WIDTH_MAP: Record<string, string> = { normal: '800px', wide: '1100px', full: '100%' };
 
@@ -1091,6 +1107,12 @@
 		}
 		startAutoSave(); // Start auto-save with 5-minute interval
 		themeStore.init(); // Initialize theme
+
+		// 헤더 자동 숨김 설정 복원 (기본값: 꺼짐 = 항상 표시)
+		if (localStorage.getItem(HEADER_AUTOHIDE_KEY) === '1') {
+			headerAutoHide = true;
+			startHideTimer();
+		}
 		// Initialize Tiptap for the default document mode
 		setTimeout(() => initTiptap(), 50);
 
@@ -1264,7 +1286,7 @@
 {/if}
 
 <div class="app">
-	<header class="header" class:header-hidden={!headerVisible} on:mouseenter={cancelHeaderHide} on:mouseleave={startHideTimer}>
+	<header class="header" class:header-hidden={!headerVisible} class:header-pinned={!headerAutoHide} on:mouseenter={cancelHeaderHide} on:mouseleave={startHideTimer}>
 		<div class="title-section">
 			<h1>
 				<img src="/logo.svg" alt="EasyMD Logo" class="logo-icon" />
@@ -1353,6 +1375,13 @@
 			</div>
 			<button on:click={cycleDocumentWidth} class="width-button" title="문서 너비 변경">
 				{documentWidth === 'normal' ? '↔ 보통' : documentWidth === 'wide' ? '↔ 넓게' : '↔ 전체'}
+			</button>
+			<button
+				on:click={toggleHeaderAutoHide}
+				class="header-toggle-button"
+				title={headerAutoHide ? '헤더 자동 숨김 켜짐 — 클릭하면 항상 표시' : '헤더 항상 표시 — 클릭하면 자동 숨김'}
+			>
+				{headerAutoHide ? '📍 자동 숨김' : '📌 항상 표시'}
 			</button>
 			<button
 				on:click={() => themeStore.toggle()}
@@ -1792,9 +1821,15 @@
 		justify-content: space-between;
 		align-items: center;
 		box-shadow: 0 2px 8px rgba(102,126,234,0.3);
-		max-height: 120px;
+		max-height: 240px;
 		overflow: hidden;
 		transition: max-height 0.35s ease, opacity 0.3s ease, padding 0.35s ease;
+	}
+
+	/* 자동 숨김 꺼짐(고정 모드): 높이 제한·클리핑 없이 항상 자연스럽게 표시 */
+	.header.header-pinned {
+		max-height: none;
+		overflow: visible;
 	}
 
 	.header.header-hidden {
@@ -3005,6 +3040,9 @@
 			gap: 1rem;
 			align-items: stretch;
 			position: relative;
+			/* 모바일에서는 controls가 헤더 밖으로 펼쳐지는 드롭다운이라 잘리면 안 됨 */
+			max-height: none;
+			overflow: visible;
 		}
 
 		.title-section {
