@@ -1674,8 +1674,9 @@
 		<div bind:this={editorContainer} class="document-view tiptap-container" style="max-width: {WIDTH_MAP[documentWidth]}"></div>
 	</main>
 	</div>
+</div>
 
-	<!-- SEO 콘텐츠 섹션 (정적 prerender — 크롤러/사용자용 본문) -->
+	<!-- SEO 콘텐츠 섹션 (정적 prerender — 크롤러/사용자용 본문) · .app(100vh) 밖에 두어 에디터와 겹치지 않게 함 -->
 	<section class="seo-content" aria-label="이지 마크다운 소개">
 		<div class="seo-inner">
 			<h2>EasyMD — 브라우저에서 바로 쓰는 무료 마크다운 에디터</h2>
@@ -1747,7 +1748,6 @@
 			</div>
 		</div>
 	</footer>
-</div>
 
 <style>
 	:global(:root) {
