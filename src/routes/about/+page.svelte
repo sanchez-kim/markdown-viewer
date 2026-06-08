@@ -18,7 +18,7 @@
 		<h1>이지 마크다운 <span class="brand">EasyMD</span></h1>
 		<p class="tagline">노션처럼 쓰고, 마크다운으로 저장하는 무료 웹 에디터</p>
 		<div class="cta-row">
-			<a href="/" class="btn-primary">에디터 열기 →</a>
+			<a href="/editor" class="btn-primary">에디터 열기 →</a>
 			<a href="https://github.com/sanchez-kim/markdown-viewer" target="_blank" rel="noopener" class="btn-secondary">GitHub</a>
 		</div>
 	</div>
@@ -174,7 +174,7 @@
 
 		<div class="back-link">
 			<a href="/blog">블로그 →</a>
-			<a href="/">← 에디터로 돌아가기</a>
+			<a href="/editor">← 에디터로 돌아가기</a>
 		</div>
 	</div>
 </div>

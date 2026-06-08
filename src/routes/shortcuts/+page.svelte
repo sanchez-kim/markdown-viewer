@@ -135,7 +135,7 @@
 
 		<div class="cta-box">
 			<p>⌨️ 단축키를 직접 사용해보세요!</p>
-			<a href="/" class="cta-button">EasyMD 에디터 열기</a>
+			<a href="/editor" class="cta-button">EasyMD 에디터 열기</a>
 		</div>
 
 		<div class="back-link">

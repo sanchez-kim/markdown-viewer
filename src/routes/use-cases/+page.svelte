@@ -120,7 +120,7 @@
 		<section class="cta-section">
 			<h2>지금 바로 시작하세요</h2>
 			<p>설치 없이, 로그인 없이. 브라우저만 있으면 됩니다.</p>
-			<a href="/" class="cta-button">EasyMD 열기 →</a>
+			<a href="/editor" class="cta-button">EasyMD 열기 →</a>
 		</section>
 
 		<div class="back-link">

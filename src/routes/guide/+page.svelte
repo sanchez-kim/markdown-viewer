@@ -285,7 +285,7 @@ ___</code></pre>
 		<!-- CTA -->
 		<div class="cta-box">
 			<p>🚀 배운 문법을 바로 사용해보세요!</p>
-			<a href="/" class="cta-button">EasyMD에서 바로 사용해보기</a>
+			<a href="/editor" class="cta-button">EasyMD에서 바로 사용해보기</a>
 		</div>
 
 		<div class="back-link">

@@ -149,7 +149,7 @@
 		<section class="cta-section">
 			<h2>직접 써보세요</h2>
 			<p>30초 안에 시작할 수 있습니다. 설치도, 회원가입도 필요 없습니다.</p>
-			<a href="/" class="cta-button">EasyMD 무료로 시작하기 →</a>
+			<a href="/editor" class="cta-button">EasyMD 무료로 시작하기 →</a>
 		</section>
 
 		<div class="back-link">

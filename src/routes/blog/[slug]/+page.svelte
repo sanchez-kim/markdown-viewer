@@ -75,7 +75,7 @@
 
 		<div class="cta-box">
 			<p>이 글에서 다룬 문법을 바로 연습해보세요.</p>
-			<a href="/" class="cta-button">이지 마크다운 에디터 열기 →</a>
+			<a href="/editor" class="cta-button">이지 마크다운 에디터 열기 →</a>
 		</div>
 
 		{#if otherPosts.length > 0}

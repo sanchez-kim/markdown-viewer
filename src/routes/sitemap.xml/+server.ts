@@ -6,6 +6,7 @@ export const prerender = true;
 // 정적 페이지 목록 — 새 페이지 추가 시 여기에 한 줄 추가하면 sitemap에 자동 반영됩니다.
 const staticRoutes: { path: string; changefreq: string; priority: string }[] = [
 	{ path: '/', changefreq: 'weekly', priority: '1.0' },
+	{ path: '/editor', changefreq: 'monthly', priority: '0.9' },
 	{ path: '/blog', changefreq: 'weekly', priority: '0.9' },
 	{ path: '/guide', changefreq: 'monthly', priority: '0.8' },
 	{ path: '/templates', changefreq: 'monthly', priority: '0.8' },

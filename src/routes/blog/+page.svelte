@@ -39,7 +39,7 @@
 		</div>
 
 		<div class="back-link">
-			<a href="/">← 에디터로 돌아가기</a>
+			<a href="/editor">← 에디터로 돌아가기</a>
 		</div>
 	</div>
 </div>
