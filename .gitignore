@@ -30,3 +30,5 @@ temp/
 
 # Tauri (standalone branch only)
 src-tauri/
+# Claude Code transient
+.claude/scheduled_tasks.lock
