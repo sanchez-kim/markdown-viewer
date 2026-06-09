@@ -32,3 +32,8 @@ temp/
 src-tauri/
 # Claude Code transient
 .claude/scheduled_tasks.lock
+
+# Playwright
+/test-results/
+/playwright-report/
+/playwright/.cache/
