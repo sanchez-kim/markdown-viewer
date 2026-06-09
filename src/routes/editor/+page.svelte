@@ -48,6 +48,9 @@
 	let showHero = false; // will be set in onMount after docStore.init()
 	let activeDocId = '';
 	let showDocList = false;
+	let showFileMenu = false;
+	let showMoreMenu = false;
+	let autoSaveTimer: ReturnType<typeof setTimeout> | null = null;
 
 	// ===== TIPTAP EDITOR STATE =====
 	let tiptapEditor: Editor | null = null;
@@ -198,12 +201,12 @@
 	}
 
 	// ===== LOCAL STORAGE & AUTO-SAVE =====
-	function saveToLocal(label = '수동저장') {
+	function saveToLocal(label = '수동저장', skipHistory = false) {
 		if (!browser) return;
 		try {
 			saveStatus = 'saving';
 			docStore.saveDoc(activeDocId, markdownText, currentFileName);
-			pushHistory(activeDocId, markdownText, label);
+			if (!skipHistory) pushHistory(activeDocId, markdownText, label);
 			lastSaved = new Date().toLocaleTimeString();
 			saveStatus = 'saved';
 			previousText = markdownText;
@@ -288,6 +291,32 @@
 	function manualSave() {
 		saveToLocal('수동저장');
 		toastStore.show('저장되었습니다!', 'success');
+	}
+
+	// 변경 후 일정 시간이 지나면 자동으로 로컬에 저장(상시 자동저장). 잦은 저장이므로 히스토리는 남기지 않음.
+	function scheduleAutoSave() {
+		if (!browser) return;
+		if (autoSaveTimer) clearTimeout(autoSaveTimer);
+		autoSaveTimer = setTimeout(() => {
+			if (markdownText !== undefined && saveStatus !== 'saving') {
+				saveToLocal('자동저장', true);
+			}
+		}, 1200);
+	}
+
+	// ===== 헤더 메뉴 (파일 / 더보기) =====
+	function toggleFileMenu() {
+		showFileMenu = !showFileMenu;
+		showMoreMenu = false;
+		showExportDropdown = false;
+	}
+	function toggleMoreMenu() {
+		showMoreMenu = !showMoreMenu;
+		showFileMenu = false;
+	}
+	function closeHeaderMenus() {
+		showFileMenu = false;
+		showMoreMenu = false;
 	}
 
 	async function copyShareLink() {
@@ -1144,6 +1173,10 @@
 			if (!target.closest('.export-dropdown')) {
 				showExportDropdown = false;
 			}
+			if (!target.closest('.hdr-menu')) {
+				showFileMenu = false;
+				showMoreMenu = false;
+			}
 			if (!target.closest('.bubble-color-group')) {
 				showColorPicker = false;
 				showHighlightPicker = false;
@@ -1165,10 +1198,11 @@
 	
 	$: if (markdownText !== undefined) {
 		schedulePreviewUpdate();
-		// Only change to unsaved if text actually changed and currently saved
-		if (markdownText !== previousText && saveStatus === 'saved') {
-			saveStatus = 'unsaved';
+		// 실제로 내용이 바뀌었으면 상태 표시 + 상시 자동저장 예약
+		if (markdownText !== previousText) {
+			if (saveStatus === 'saved') saveStatus = 'unsaved';
 			previousText = markdownText;
+			scheduleAutoSave();
 		}
 	}
 	
@@ -1289,8 +1323,10 @@
 	<header class="header" class:header-hidden={!headerVisible} class:header-pinned={!headerAutoHide} on:mouseenter={cancelHeaderHide} on:mouseleave={startHideTimer}>
 		<div class="title-section">
 			<h1>
-				<img src="/logo.svg" alt="EasyMD Logo" class="logo-icon" />
-				이지 마크다운
+				<a href="/" class="logo-link" title="홈으로">
+					<img src="/logo.svg" alt="EasyMD Logo" class="logo-icon" />
+					이지 마크다운
+				</a>
 			</h1>
 			<div class="status-info">
 				{#if isEditingFilename}
@@ -1315,14 +1351,9 @@
 						{currentFileName}
 					</span>
 				{/if}
-				<span class="save-status" class:unsaved={saveStatus === 'unsaved'} class:saving={saveStatus === 'saving'}>
-					{#if saveStatus === 'saved'}
-						✅ 저장됨 {lastSaved ? `(${lastSaved})` : ''}
-					{:else if saveStatus === 'saving'}
-						💾 저장 중...
-					{:else}
-						⚠️ 저장되지 않음
-					{/if}
+				<span class="save-status" class:saving={saveStatus !== 'saved'} title={lastSaved ? `마지막 저장 ${lastSaved}` : ''}>
+					<span class="save-dot"></span>
+					{saveStatus === 'saved' ? '저장됨' : '저장 중…'}
 				</span>
 			</div>
 		</div>
@@ -1337,68 +1368,60 @@
 				id="file-input"
 				style="display: none;"
 			>
-			<button on:click={() => showDocList = !showDocList} title="문서 목록" class:active={showDocList}>
-				📋 문서
+			<!-- 문서 목록 사이드바 -->
+			<button class="icon-btn" class:active={showDocList} on:click={() => showDocList = !showDocList} title="문서 목록" aria-label="문서 목록">
+				<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"/><line x1="9" y1="4" x2="9" y2="20"/></svg>
 			</button>
-			<button on:click={newDocument} title="새 문서 시작">
-				🆕 새 문서
-			</button>
-			<button on:click={openLocalFile} title="마크다운 파일 불러오기 (Ctrl+O)">
-				📂 불러오기
-			</button>
-			<button on:click={manualSave} title="로컬스토리지에 저장 (Ctrl+S)">
-				💾 저장
-			</button>
-			<button on:click={openImagePicker} title="이미지 파일 추가">
-				🖼️ 이미지
-			</button>
-			<div class="export-dropdown" class:show={showExportDropdown}>
-				<button on:click={toggleExportDropdown} class="dropdown-toggle" title="문서 내보내기">
-					📁 내보내기 ▼
+
+			<!-- 파일 메뉴 (새 문서 / 불러오기 / 내보내기) -->
+			<div class="hdr-menu">
+				<button class="text-btn" class:active={showFileMenu} on:click={toggleFileMenu} title="새 문서·불러오기·내보내기" aria-haspopup="true" aria-expanded={showFileMenu}>
+					파일
+					<svg class="caret" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
 				</button>
-				{#if showExportDropdown}
-					<div class="dropdown-menu">
-						<button on:click={exportAsMarkdown} class="dropdown-item">
-							📝 마크다운 파일 (.md)
-						</button>
-						<button on:click={exportAsPDF} class="dropdown-item">
-							📄 PDF 문서 (.pdf)
-						</button>
-						<button on:click={handleExportAsDocx} class="dropdown-item">
-							📘 Word 문서 (.docx)
-						</button>
-						<button on:click={() => { copyShareLink(); closeExportDropdown(); }} class="dropdown-item">
-							🔗 공유 링크 복사
-						</button>
+				{#if showFileMenu}
+					<div class="menu-pop">
+						<button class="menu-item" on:click={() => { newDocument(); closeHeaderMenus(); }}>새 문서</button>
+						<button class="menu-item" on:click={() => { openLocalFile(); closeHeaderMenus(); }}>파일 불러오기…</button>
+						<div class="menu-sep"></div>
+						<div class="menu-label">내보내기</div>
+						<button class="menu-item" on:click={() => { exportAsMarkdown(); closeHeaderMenus(); }}>마크다운 (.md)</button>
+						<button class="menu-item" on:click={() => { exportAsPDF(); closeHeaderMenus(); }}>PDF (.pdf)</button>
+						<button class="menu-item" on:click={() => { handleExportAsDocx(); closeHeaderMenus(); }}>Word (.docx)</button>
 					</div>
 				{/if}
 			</div>
-			<button on:click={cycleDocumentWidth} class="width-button" title="문서 너비 변경">
-				{documentWidth === 'normal' ? '↔ 보통' : documentWidth === 'wide' ? '↔ 넓게' : '↔ 전체'}
+
+			<!-- 문서 너비 -->
+			<button class="icon-btn" on:click={cycleDocumentWidth} title="문서 너비: {documentWidth === 'normal' ? '보통' : documentWidth === 'wide' ? '넓게' : '전체'}" aria-label="문서 너비">
+				<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="12" x2="21" y2="12"/><polyline points="7 8 3 12 7 16"/><polyline points="17 8 21 12 17 16"/></svg>
 			</button>
-			<button
-				on:click={toggleHeaderAutoHide}
-				class="header-toggle-button"
-				title={headerAutoHide ? '헤더 자동 숨김 켜짐 — 클릭하면 항상 표시' : '헤더 항상 표시 — 클릭하면 자동 숨김'}
-			>
-				{headerAutoHide ? '📍 자동 숨김' : '📌 항상 표시'}
+
+			<!-- 테마 -->
+			<button class="icon-btn" on:click={() => themeStore.toggle()} title={$themeStore === 'dark' ? '라이트 모드' : '다크 모드'} aria-label="테마 전환">
+				{#if $themeStore === 'dark'}
+					<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><line x1="12" y1="2" x2="12" y2="5"/><line x1="12" y1="19" x2="12" y2="22"/><line x1="2" y1="12" x2="5" y2="12"/><line x1="19" y1="12" x2="22" y2="12"/><line x1="4.9" y1="4.9" x2="7" y2="7"/><line x1="17" y1="17" x2="19.1" y2="19.1"/><line x1="4.9" y1="19.1" x2="7" y2="17"/><line x1="17" y1="7" x2="19.1" y2="4.9"/></svg>
+				{:else}
+					<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.8A9 9 0 1 1 11.2 3 7 7 0 0 0 21 12.8z"/></svg>
+				{/if}
 			</button>
-			<button
-				on:click={() => themeStore.toggle()}
-				class="theme-button"
-				title="다크 모드 {$themeStore === 'dark' ? '끄기' : '켜기'}"
-			>
-				{$themeStore === 'dark' ? '☀️' : '🌙'} 테마
-			</button>
-			<a
-				href="https://buymeacoffee.com/sanchezkim7"
-				target="_blank"
-				rel="noopener noreferrer"
-				class="sponsor-button"
-				title="개발자에게 커피 한 잔 사주기"
-			>
-				☕ 후원
-			</a>
+
+			<!-- 더보기 -->
+			<div class="hdr-menu">
+				<button class="icon-btn" class:active={showMoreMenu} on:click={toggleMoreMenu} title="더보기" aria-label="더보기" aria-haspopup="true" aria-expanded={showMoreMenu}>
+					<svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="12" cy="19" r="1.6"/></svg>
+				</button>
+				{#if showMoreMenu}
+					<div class="menu-pop right">
+						<button class="menu-item" on:click={() => { toggleHeaderAutoHide(); closeHeaderMenus(); }}>
+							{headerAutoHide ? '헤더 항상 표시' : '헤더 자동 숨김'}
+						</button>
+						<a class="menu-item" href="https://buymeacoffee.com/sanchezkim7" target="_blank" rel="noopener noreferrer" on:click={closeHeaderMenus}>
+							☕ 개발자 후원
+						</a>
+					</div>
+				{/if}
+			</div>
 		</div>
 	</header>
 
@@ -1862,18 +1885,31 @@
 		color: rgba(255, 255, 255, 0.6);
 	}
 
+	.logo-link {
+		display: inline-flex;
+		align-items: center;
+		gap: 0.5rem;
+		color: inherit;
+		text-decoration: none;
+	}
+	.logo-link:hover { opacity: 0.85; }
+
 	.save-status {
-		color: #a8d5a8;
-		font-size: 0.8rem;
+		display: inline-flex;
+		align-items: center;
+		gap: 0.4rem;
+		color: rgba(255, 255, 255, 0.78);
+		font-size: 0.78rem;
 	}
-
-	.save-status.unsaved {
-		color: #ffb3b3;
+	.save-dot {
+		width: 6px;
+		height: 6px;
+		border-radius: 50%;
+		background: #8fe388;
+		transition: background-color 0.2s;
 	}
-
-	.save-status.saving {
-		color: #ffd700;
-	}
+	.save-status.saving { color: rgba(255, 255, 255, 0.65); }
+	.save-status.saving .save-dot { background: #ffd76a; }
 
 	.mobile-menu-toggle {
 		display: none;
@@ -1911,104 +1947,96 @@
 		background: #2980b9;
 	}
 
-
-	.theme-button {
-		transition: all 0.3s ease;
-	}
-
-	.theme-button:hover {
-		transform: scale(1.05);
-	}
-
-	.sponsor-button {
-		background: #FFDD00;
-		color: #000000;
+	/* ===== 미니멀 아이콘 툴바 (기존 파란 버튼 스타일 오버라이드) ===== */
+	.controls .icon-btn,
+	.controls .text-btn {
+		background: transparent;
+		color: #fff;
 		border: none;
-		padding: 0.5rem 1rem;
-		border-radius: 4px;
-		cursor: pointer;
-		font-size: 0.9rem;
-		font-weight: 600;
-		text-decoration: none;
 		display: inline-flex;
 		align-items: center;
-		gap: 0.25rem;
-		transition: all 0.3s ease;
-		box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-	}
-
-	.sponsor-button:hover {
-		background: #FFED4E;
-		transform: translateY(-2px);
-		box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
-	}
-
-	.sponsor-button:active {
-		transform: translateY(0);
-	}
-
-	.export-dropdown {
-		position: relative;
-		display: inline-block;
-	}
-
-	.dropdown-toggle {
-		background: #3498db;
-		color: white;
-		border: none;
-		padding: 0.5rem 1rem;
-		border-radius: 4px;
+		gap: 0.3rem;
+		padding: 0.45rem;
+		border-radius: 6px;
 		cursor: pointer;
+		transition: background-color 0.15s;
+	}
+	.controls .text-btn {
+		padding: 0.45rem 0.7rem;
 		font-size: 0.9rem;
-		transition: background-color 0.2s;
+		font-weight: 500;
 	}
-
-	.dropdown-toggle:hover {
-		background: #2980b9;
+	.controls .icon-btn:hover,
+	.controls .text-btn:hover,
+	.controls .icon-btn.active,
+	.controls .text-btn.active {
+		background: rgba(255, 255, 255, 0.18);
 	}
+	.controls .icon-btn svg { width: 19px; height: 19px; display: block; }
+	.controls .text-btn .caret { width: 14px; height: 14px; opacity: 0.85; }
 
-	.dropdown-menu {
+	.hdr-menu { position: relative; display: inline-flex; }
+
+	.menu-pop {
 		position: absolute;
-		top: 100%;
+		top: calc(100% + 6px);
 		left: 0;
-		min-width: 200px;
-		background: white;
-		border: 1px solid #ddd;
-		border-radius: 4px;
-		box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+		min-width: 184px;
+		background: #fff;
+		border: 1px solid #e5e7eb;
+		border-radius: 8px;
+		box-shadow: 0 8px 24px rgba(0, 0, 0, 0.16);
+		padding: 0.35rem;
 		z-index: 1000;
-		margin-top: 4px;
 	}
+	.menu-pop.right { left: auto; right: 0; }
 
-	.dropdown-item {
-		width: 100%;
-		padding: 0.75rem 1rem;
-		background: none;
-		border: none;
-		text-align: left;
-		cursor: pointer;
-		font-size: 0.9rem;
-		color: #333;
-		transition: background-color 0.2s;
+	.controls .menu-item {
 		display: block;
+		width: 100%;
+		text-align: left;
+		background: transparent;
+		color: #1a1a2e;
+		border: none;
+		padding: 0.5rem 0.7rem;
+		border-radius: 5px;
+		font-size: 0.88rem;
+		cursor: pointer;
+		text-decoration: none;
+		transition: background-color 0.12s;
+	}
+	.controls .menu-item:hover { background: #f1f3f9; }
+
+	.menu-sep { height: 1px; background: #ececf1; margin: 0.35rem 0.3rem; }
+	.menu-label {
+		font-size: 0.72rem;
+		font-weight: 600;
+		color: #9aa0ac;
+		padding: 0.3rem 0.7rem 0.15rem;
+		letter-spacing: 0.02em;
 	}
 
-	.dropdown-item:first-child {
-		border-radius: 4px 4px 0 0;
-	}
+	/* 다크 모드 메뉴 */
+	:global(html.dark) .menu-pop { background: #1c2128; border-color: #30363d; }
+	:global(html.dark) .controls .menu-item { color: #e6edf3; }
+	:global(html.dark) .controls .menu-item:hover { background: #262c36; }
+	:global(html.dark) .menu-sep { background: #30363d; }
+	:global(html.dark) .menu-label { color: #768390; }
 
-	.dropdown-item:last-child {
-		border-radius: 0 0 4px 4px;
-	}
 
-	.dropdown-item:hover {
-		background: #f8f9fa;
-		color: #2980b9;
-	}
 
-	.dropdown-item:not(:last-child) {
-		border-bottom: 1px solid #eee;
-	}
+
+
+
+
+
+
+
+
+
+
+
+
 
 	.main {
 		flex: 1;
@@ -2311,113 +2339,17 @@
 	}
 
 	/* ===== SEO CONTENT SECTION ===== */
-	.seo-content {
-		background: #f8f9fb;
-		color: #2d2d35;
-		padding: 3rem 2rem;
-		border-top: 1px solid #e6e8ee;
-	}
 
-	.seo-inner {
-		max-width: 820px;
-		margin: 0 auto;
-		line-height: 1.75;
-	}
 
-	.seo-inner h2 {
-		font-size: 1.6rem;
-		margin: 0 0 1rem;
-		background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-		-webkit-background-clip: text;
-		background-clip: text;
-		-webkit-text-fill-color: transparent;
-	}
 
-	.seo-inner h3 {
-		font-size: 1.2rem;
-		margin: 2rem 0 0.75rem;
-		color: #1f2330;
-	}
 
-	.seo-inner p {
-		margin: 0 0 1rem;
-		color: #44485a;
-	}
 
-	.seo-inner code {
-		background: #eceef5;
-		padding: 0.1em 0.35em;
-		border-radius: 4px;
-		font-size: 0.9em;
-	}
 
-	.seo-features {
-		margin: 0;
-		padding-left: 1.25rem;
-		color: #44485a;
-	}
 
-	.seo-features li {
-		margin-bottom: 0.5rem;
-	}
 
-	.seo-links {
-		display: flex;
-		flex-wrap: wrap;
-		gap: 0.6rem 0.75rem;
-	}
 
-	.seo-links a {
-		display: inline-block;
-		padding: 0.45rem 0.9rem;
-		background: #fff;
-		border: 1px solid #d9dce6;
-		border-radius: 999px;
-		color: #5a4bb5;
-		text-decoration: none;
-		font-size: 0.9rem;
-		transition: all 0.2s;
-	}
 
-	.seo-links a:hover {
-		border-color: #764ba2;
-		color: #764ba2;
-		box-shadow: 0 2px 8px rgba(118, 75, 162, 0.15);
-	}
 
-	:global(html.dark) .seo-content {
-		background: #1a1b22;
-		color: #d6d8e0;
-		border-top-color: #2c2e38;
-	}
-
-	:global(html.dark) .seo-inner h3 {
-		color: #e8eaf0;
-	}
-
-	:global(html.dark) .seo-inner p,
-	:global(html.dark) .seo-features {
-		color: #b4b7c4;
-	}
-
-	:global(html.dark) .seo-inner code {
-		background: #2c2e38;
-	}
-
-	:global(html.dark) .seo-links a {
-		background: #23252e;
-		border-color: #363945;
-		color: #a99cf0;
-	}
-
-	@media (max-width: 640px) {
-		.seo-content {
-			padding: 2rem 1.25rem;
-		}
-		.seo-inner h2 {
-			font-size: 1.35rem;
-		}
-	}
 
 	/* ===== TIPTAP EDITOR STYLES ===== */
 	.tiptap-container {
@@ -2896,19 +2828,6 @@
 	}
 
 	/* Width button */
-	.width-button {
-		background: rgba(255, 255, 255, 0.15);
-		color: white;
-		border: 1px solid rgba(255,255,255,0.25);
-		padding: 0.5rem 1rem;
-		border-radius: 4px;
-		cursor: pointer;
-		font-size: 0.85rem;
-		transition: background-color 0.2s;
-	}
-	.width-button:hover {
-		background: rgba(255, 255, 255, 0.25);
-	}
 
 	/* Table picker inside slash menu */
 	.table-picker {
