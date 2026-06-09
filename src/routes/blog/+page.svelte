@@ -1,7 +1,15 @@
 <script lang="ts">
 	import { posts } from '$lib/data/posts';
 
-	const categories = [...new Set(posts.map(p => p.category))];
+	// 카테고리별 글 수
+	const categoryCounts: [string, number][] = [...new Set(posts.map((p) => p.category))].map(
+		(c) => [c, posts.filter((p) => p.category === c).length]
+	);
+
+	let selected = $state('전체');
+	const filtered = $derived(
+		selected === '전체' ? posts : posts.filter((p) => p.category === selected)
+	);
 
 	function formatDate(dateStr: string): string {
 		const d = new Date(dateStr);
@@ -21,8 +29,19 @@
 	</div>
 
 	<div class="container">
+		<div class="filter-bar">
+			<button class="chip" class:active={selected === '전체'} on:click={() => (selected = '전체')}>
+				전체 <span class="chip-count">{posts.length}</span>
+			</button>
+			{#each categoryCounts as [cat, count]}
+				<button class="chip" class:active={selected === cat} on:click={() => (selected = cat)}>
+					{cat} <span class="chip-count">{count}</span>
+				</button>
+			{/each}
+		</div>
+
 		<div class="post-grid">
-			{#each posts as post}
+			{#each filtered as post (post.slug)}
 				<a href="/blog/{post.slug}" class="post-card">
 					<div class="post-meta">
 						<span class="category">{post.category}</span>
@@ -73,6 +92,55 @@
 		max-width: 860px;
 		margin: 0 auto;
 		padding: 3rem 1.5rem;
+	}
+
+	.filter-bar {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 0.5rem;
+		margin-bottom: 2rem;
+	}
+
+	.chip {
+		display: inline-flex;
+		align-items: center;
+		gap: 0.4rem;
+		background: var(--bg-secondary, #fff);
+		border: 1px solid var(--border-color, #e1e4e8);
+		color: var(--text-secondary, #444);
+		padding: 0.4rem 0.85rem;
+		border-radius: 999px;
+		font-size: 0.88rem;
+		font-weight: 500;
+		cursor: pointer;
+		transition: background-color 0.15s, color 0.15s, border-color 0.15s;
+	}
+
+	.chip:hover {
+		border-color: #667eea;
+		color: #667eea;
+	}
+
+	.chip.active {
+		background: #667eea;
+		border-color: #667eea;
+		color: #fff;
+	}
+
+	.chip-count {
+		font-size: 0.78rem;
+		opacity: 0.7;
+	}
+
+	:global(html.dark) .chip {
+		background: #161b22;
+		border-color: #30363d;
+		color: #8b949e;
+	}
+	:global(html.dark) .chip.active {
+		background: #667eea;
+		border-color: #667eea;
+		color: #fff;
 	}
 
 	.post-grid {
