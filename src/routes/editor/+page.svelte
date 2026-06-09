@@ -1371,6 +1371,7 @@
 			<!-- 문서 목록 사이드바 -->
 			<button class="icon-btn" class:active={showDocList} on:click={() => showDocList = !showDocList} title="문서 목록" aria-label="문서 목록">
 				<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"/><line x1="9" y1="4" x2="9" y2="20"/></svg>
+				<span class="btn-label">문서 목록</span>
 			</button>
 
 			<!-- 파일 메뉴 (새 문서 / 불러오기 / 내보내기) -->
@@ -1395,6 +1396,7 @@
 			<!-- 문서 너비 -->
 			<button class="icon-btn" on:click={cycleDocumentWidth} title="문서 너비: {documentWidth === 'normal' ? '보통' : documentWidth === 'wide' ? '넓게' : '전체'}" aria-label="문서 너비">
 				<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="12" x2="21" y2="12"/><polyline points="7 8 3 12 7 16"/><polyline points="17 8 21 12 17 16"/></svg>
+				<span class="btn-label">문서 너비</span>
 			</button>
 
 			<!-- 테마 -->
@@ -1404,12 +1406,14 @@
 				{:else}
 					<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.8A9 9 0 1 1 11.2 3 7 7 0 0 0 21 12.8z"/></svg>
 				{/if}
+				<span class="btn-label">테마</span>
 			</button>
 
 			<!-- 더보기 -->
 			<div class="hdr-menu">
 				<button class="icon-btn" class:active={showMoreMenu} on:click={toggleMoreMenu} title="더보기" aria-label="더보기" aria-haspopup="true" aria-expanded={showMoreMenu}>
 					<svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="12" cy="19" r="1.6"/></svg>
+					<span class="btn-label">더보기</span>
 				</button>
 				{#if showMoreMenu}
 					<div class="menu-pop right">
@@ -1974,6 +1978,9 @@
 	}
 	.controls .icon-btn svg { width: 19px; height: 19px; display: block; }
 	.controls .text-btn .caret { width: 14px; height: 14px; opacity: 0.85; }
+
+	/* 데스크톱: 아이콘만(호버 툴팁). 모바일 드롭다운에서는 레이블 노출 */
+	.btn-label { display: none; }
 
 	.hdr-menu { position: relative; display: inline-flex; }
 
@@ -2894,14 +2901,33 @@
 			z-index: 1000;
 		}
 
+		.controls { width: 232px; }
+
 		.controls.mobile-open {
-			max-height: 500px;
+			max-height: 760px;
 			opacity: 1;
 		}
 
 		.controls button {
 			width: 100%;
 			text-align: left;
+		}
+
+		/* 모바일 드롭다운: 호버 툴팁이 없으므로 아이콘 + 레이블 행으로 표시 */
+		.controls .icon-btn,
+		.controls .text-btn {
+			width: 100%;
+			justify-content: flex-start;
+			gap: 0.7rem;
+			padding: 0.6rem 0.7rem;
+		}
+		.controls .btn-label { display: inline; font-size: 0.92rem; }
+		.controls .hdr-menu { display: block; width: 100%; }
+		.controls .menu-pop {
+			position: static;
+			width: 100%;
+			box-shadow: none;
+			margin: 0.2rem 0 0.2rem 0.5rem;
 		}
 
 		.header {

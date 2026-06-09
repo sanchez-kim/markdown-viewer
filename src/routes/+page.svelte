@@ -181,7 +181,15 @@
 		text-decoration: none;
 	}
 
-	.lp-brand img { width: 1.8rem; height: 1.8rem; }
+	/* 로고 SVG가 흰색이라 흰 배경에선 안 보임 → 그라데이션 배지로 감싸 어디서든 보이게 */
+	.lp-brand img {
+		width: 1.9rem;
+		height: 1.9rem;
+		padding: 4px;
+		border-radius: 7px;
+		background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+		box-sizing: border-box;
+	}
 
 	.lp-nav {
 		display: flex;

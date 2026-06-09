@@ -55,9 +55,14 @@
 		font-size: 1.05rem;
 	}
 
+	/* 흰색 logo.svg를 그라데이션 배지로 감싸 흰 헤더에서도 보이게 */
 	.site-brand img {
-		width: 1.6rem;
-		height: 1.6rem;
+		width: 1.75rem;
+		height: 1.75rem;
+		padding: 4px;
+		border-radius: 6px;
+		background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+		box-sizing: border-box;
 	}
 
 	.site-cta {
