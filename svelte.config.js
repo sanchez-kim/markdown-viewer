@@ -17,7 +17,7 @@ const config = {
 			strict: true
 		}),
 		prerender: {
-			handleHttpError: ({ path, referrer, message }) => {
+			handleHttpError: ({ path, message }) => {
 				// Ignore favicon.png 404 error
 				if (path === '/favicon.png') {
 					return;

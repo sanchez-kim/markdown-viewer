@@ -74,7 +74,7 @@
 			<p class="lp-sub">글을 쓰면 바로 예쁘게 보입니다.<br>저장은 자동으로, 내보내기는 MD·PDF·Word까지.</p>
 			<a href="/editor" class="lp-cta">지금 바로 써보기 →</a>
 			<ul class="lp-features">
-				{#each features as f}
+				{#each features as f (f.label)}
 					<li><span class="lp-feature-icon">{f.icon}</span><span>{f.label}</span></li>
 				{/each}
 			</ul>

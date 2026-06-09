@@ -15,7 +15,7 @@ npm run preview       # 빌드 결과 미리보기 (포트 4173)
 
 npm run lint          # ESLint
 npm run format        # Prettier 자동 포맷 / format:check 는 검사만
-npm run check         # svelte-check (타입). ⚠️ 알려진 타입 에러 8건 있음(점진 정리 대상)
+npm run check         # svelte-check (타입). 0 errors / 0 warnings 유지
 npm run test:e2e      # Playwright E2E 스모크 (build+preview 자동 기동)
 ```
 
@@ -26,10 +26,10 @@ npm run test:e2e      # Playwright E2E 스모크 (build+preview 자동 기동)
 안정성 장치(2026-06-09 도입). 핵심 철학: **"빌드는 통과하는데 동작이 망가지는" 버그**(예: 이번에 겪은, SEO 섹션이 에디터를 덮어 타이핑이 안 되던 버그)를 잡는 것. 이런 건 타입체크로는 못 잡으므로 **E2E 스모크**가 가장 중요하다.
 
 - **CI**: `.github/workflows/ci.yml` — `main` push/PR 시 자동 실행.
-  - `quality` 잡: `lint`(차단) + `check`(비차단, 타입 경고 가시화) + `build`(차단)
+  - `quality` 잡: `lint` + `check` + `build` (모두 차단)
   - `e2e` 잡: Playwright 스모크(차단). 여기서 깨지면 Netlify 배포 전에 막힌다.
 - **E2E** (`e2e/smoke.spec.ts`): 에디터 타이핑·랜딩→에디터 진입·블로그 목록/필터·글 렌더·브랜드 헤더. 회귀가 발생했던 흐름 위주. 새 핵심 기능 추가 시 여기에 스모크 한 줄 더하는 걸 권장.
-- **ESLint**(`eslint.config.js`): 초기 코드베이스라 휴리스틱 오탐·스타일 규칙은 완화(warn/off)했고, 실제 버그성 규칙만 error. 남은 warning(약 53건)은 점진 정리 대상.
+- **ESLint**(`eslint.config.js`): 휴리스틱 오탐·과한 스타일 규칙은 완화(off)했고 실제 버그성 규칙만 활성. 현재 0 warning. 의도적 a11y 패턴(모달 오버레이 클릭닫기, 헤더 자동숨김 등)은 `<!-- svelte-ignore a11y_* -->`로 명시 억제.
 - **Prettier**(`.prettierrc`): 탭·싱글쿼트. `src/lib/posts/`와 `*.md`는 포맷 제외.
 
 ## 페이지 구조 (`src/routes/`)

@@ -232,15 +232,6 @@
 		font-family: monospace;
 	}
 
-	.legend {
-		display: flex;
-		gap: 1.5rem;
-		flex-wrap: wrap;
-		margin-bottom: 2rem;
-		font-size: 0.85rem;
-		color: var(--text-tertiary, #7f8c8d);
-	}
-
 	a {
 		color: #3498db;
 		text-decoration: none;

@@ -4,7 +4,7 @@
 	import { error } from '@sveltejs/kit';
 	import { SITE_URL } from '$lib/config';
 
-	const slug = $derived(page.params.slug);
+	const slug = $derived(page.params.slug ?? '');
 	const post = $derived(getPost(slug));
 	const otherPosts = $derived(posts.filter(p => p.slug !== slug).slice(0, 3));
 
@@ -82,7 +82,7 @@
 			<div class="other-posts">
 				<h2>다른 글</h2>
 				<div class="other-grid">
-					{#each otherPosts as other}
+					{#each otherPosts as other (other.slug)}
 						<a href="/blog/{other.slug}" class="other-card">
 							<span class="other-category">{other.category}</span>
 							<span class="other-title">{other.title}</span>

@@ -550,7 +550,7 @@ function example() {
 		<p class="tagline">바로 쓸 수 있는 마크다운 템플릿 {templates.length}종 — 복사하거나 EasyMD에서 바로 열어보세요</p>
 
 		<div class="templates-list">
-			{#each templates as tpl}
+			{#each templates as tpl (tpl)}
 			<section class="template-card" id={tpl.id}>
 				<div class="template-header">
 					<div class="template-meta">
@@ -559,7 +559,7 @@ function example() {
 							<h2>{tpl.title}</h2>
 							<p class="template-desc">{tpl.desc}</p>
 							<div class="tags">
-								{#each tpl.tags as tag}
+								{#each tpl.tags as tag (tag)}
 									<span class="tag">{tag}</span>
 								{/each}
 							</div>

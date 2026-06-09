@@ -1,5 +1,4 @@
 <script lang="ts">
-	import { onMount } from 'svelte';
 	import { SITE_URL } from '$lib/config';
 
 	const faqs = [
@@ -74,7 +73,7 @@
 		<p class="tagline">EasyMD 사용 전 궁금한 점을 확인하세요</p>
 
 		<section class="faq-list">
-			{#each faqs as faq, i}
+			{#each faqs as faq, i (i)}
 				<div class="faq-item" class:open={openIndex === i}>
 					<button class="faq-question" on:click={() => toggle(i)} aria-expanded={openIndex === i}>
 						<span class="q-label">Q{i + 1}</span>

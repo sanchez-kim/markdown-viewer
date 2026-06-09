@@ -3,11 +3,7 @@
 	import { themeStore } from '$lib/stores/theme';
 	import { SITE_URL } from '$lib/config';
 
-	const isMac = typeof navigator !== 'undefined' && /Mac/i.test(navigator.platform);
 
-	const mod = isMac ? '⌘' : 'Ctrl';
-	const alt = isMac ? '⌥' : 'Alt';
-	const shift = 'Shift';
 
 	onMount(() => {
 		document.title = '단축키 모음 - 이지 마크다운';
@@ -100,14 +96,14 @@
 			<span class="os-badge win">Ctrl Windows / Linux: Ctrl</span>
 		</div>
 
-		{#each groups as group}
+		{#each groups as group (group)}
 		<section>
 			<h2>{group.icon} {group.title}</h2>
 			<div class="shortcut-grid">
-				{#each group.items as item}
+				{#each group.items as item (item)}
 				<div class="shortcut-card">
 					<div class="keys">
-						{#each item.keys as key, i}
+						{#each item.keys as key, i (i)}
 							<kbd>{key}</kbd>{#if i < item.keys.length - 1}<span class="plus">+</span>{/if}
 						{/each}
 					</div>

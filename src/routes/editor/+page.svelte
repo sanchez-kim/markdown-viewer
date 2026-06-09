@@ -1,7 +1,6 @@
 <script lang="ts">
 	import { onMount, onDestroy } from 'svelte';
 	import { marked } from 'marked';
-	import hljs from 'highlight.js';
 	import 'highlight.js/styles/github.min.css';
 	import DOMPurify from 'dompurify';
 	import { browser } from '$app/environment';
@@ -11,8 +10,8 @@
 	import { themeStore } from '$lib/stores/theme';
 	import { exportAsDocx } from '$lib/utils/docxExport';
 	import { docStore } from '$lib/stores/documents';
-	import { pushHistory, getHistory } from '$lib/stores/history';
-	import { encodeShareLink, decodeShareHash, isShareLink, clearShareHash, getShareLinkWarning } from '$lib/utils/shareLink';
+	import { pushHistory } from '$lib/stores/history';
+	import { decodeShareHash, isShareLink, clearShareHash } from '$lib/utils/shareLink';
 	import DocList from '$lib/components/DocList.svelte';
 	import { Editor, Extension, InputRule } from '@tiptap/core';
 	import { DOMParser as PMDOMParser, DOMSerializer as PMDOMSerializer } from '@tiptap/pm/model';
@@ -34,14 +33,12 @@
 
 	let markdownText = '';
 
-	let renderedHtml = '';
-	let previewElement: HTMLDivElement | undefined;
+	let _renderedHtml = '';
 	let lastSaved = '';
 	let saveStatus = 'saved'; // 'saved', 'saving', 'unsaved'
 	let currentFileName = 'untitled.md';
 	let isEditingFilename = false;
 	let tempFileName = '';
-	let showExportDropdown = false;
 	let imageIdCounter = 0; // Unique ID counter for images
 	let showMobileMenu = false;
 	let showShortcutsModal = false;
@@ -144,14 +141,7 @@
 		{ label: '보라', value: '#e5dbff' },
 	];
 
-	// Configure marked with highlight.js - with proper typing
 	marked.setOptions({
-		highlight: function(code: string, lang: string): string {
-			if (lang && hljs.getLanguage(lang)) {
-				return hljs.highlight(code, { language: lang }).value;
-			}
-			return hljs.highlightAuto(code).value;
-		},
 		breaks: true,
 		gfm: true
 	});
@@ -160,11 +150,11 @@
 	function updatePreview() {
 		const result = marked(markdownText);
 		const raw = typeof result === 'string' ? result : result.toString();
-		renderedHtml = browser ? DOMPurify.sanitize(raw) : raw;
+		_renderedHtml = browser ? DOMPurify.sanitize(raw) : raw;
 	}
 
 	// ===== INLINE IMAGE FOLDING =====
-	let displayText = '';
+	let _displayText = '';
 	let imageMap = new Map<string, string>(); // Store original images with proper typing
 	let debounceTimer: ReturnType<typeof setTimeout> | null = null;
 	let previewDebounceTimer: ReturnType<typeof setTimeout> | null = null;
@@ -186,7 +176,7 @@
 		imageIdCounter = 0; // Reset counter for each processing
 		const base64Pattern = /!\[([^\]]*)\]\((data:image\/[^;]+;base64,)([A-Za-z0-9+/]+=*)\)/g;
 		
-		displayText = text.replace(base64Pattern, (match, altText, prefix, base64) => {
+		_displayText = text.replace(base64Pattern, (match, altText, prefix, base64) => {
 			// Auto-fold Base64 strings longer than 200 characters
 			if (base64.length > 200) {
 				const imageId = `img-${imageIdCounter++}`; // Use counter for unique ID
@@ -308,7 +298,6 @@
 	function toggleFileMenu() {
 		showFileMenu = !showFileMenu;
 		showMoreMenu = false;
-		showExportDropdown = false;
 	}
 	function toggleMoreMenu() {
 		showMoreMenu = !showMoreMenu;
@@ -319,46 +308,8 @@
 		showMoreMenu = false;
 	}
 
-	async function copyShareLink() {
-		if (tiptapEditor) {
-			markdownText = (tiptapEditor.storage as any).markdown.getMarkdown();
-		}
-		const warning = getShareLinkWarning(markdownText);
-		if (warning) toastStore.show(warning, 'warning', 5000);
-		const link = encodeShareLink(markdownText);
-		if (!link) return;
-		try {
-			await navigator.clipboard.writeText(link);
-			toastStore.show('공유 링크가 클립보드에 복사되었습니다!', 'success');
-		} catch {
-			toastStore.show('복사 실패: ' + link, 'info', 0);
-		}
-	}
-
 	// ===== FILE I/O OPERATIONS =====
 	
-	// Type definitions for File System Access API
-	interface FilePickerOptions {
-		types?: Array<{
-			description: string;
-			accept: Record<string, string[]>;
-		}>;
-	}
-	
-	interface FileSystemFileHandle {
-		getFile(): Promise<File>;
-		createWritable(): Promise<FileSystemWritableFileStream>;
-	}
-	
-	interface FileSystemWritableFileStream {
-		write(data: string): Promise<void>;
-		close(): Promise<void>;
-	}
-	
-	interface WindowWithFileSystem extends Window {
-		showOpenFilePicker(options: FilePickerOptions): Promise<FileSystemFileHandle[]>;
-		showSaveFilePicker(options: FilePickerOptions & { suggestedName?: string }): Promise<FileSystemFileHandle>;
-	}
 	
 	function handleFileUpload(event: Event) {
 		const input = event.target as HTMLInputElement;
@@ -380,7 +331,7 @@
 		try {
 			// File System Access API with proper typing
 			if ('showOpenFilePicker' in window) {
-				const [fileHandle] = await (window as WindowWithFileSystem).showOpenFilePicker({
+				const [fileHandle] = await window.showOpenFilePicker!({
 					types: [{
 						description: 'Markdown files',
 						accept: {
@@ -401,7 +352,7 @@
 				// Fallback: trigger file input
 				document.getElementById('file-input')?.click();
 			}
-		} catch (error) {
+		} catch {
 			// 파일 선택 취소 시 아무 처리 없음
 		}
 	}
@@ -411,7 +362,7 @@
 		try {
 			// File System Access API with proper typing
 			if ('showSaveFilePicker' in window) {
-				const fileHandle = await (window as WindowWithFileSystem).showSaveFilePicker({
+				const fileHandle = await window.showSaveFilePicker!({
 					suggestedName: currentFileName,
 					types: [{
 						description: 'Markdown files',
@@ -431,7 +382,7 @@
 				// Fallback: download
 				downloadMarkdown();
 			}
-		} catch (error) {
+		} catch {
 			// 파일 저장 취소 시 아무 처리 없음
 		}
 	}
@@ -654,7 +605,6 @@
 				}),
 				BubbleMenuExt.configure({
 					element: bubbleMenuElement,
-					tippyOptions: { duration: 100 },
 					shouldShow: ({ state }) => {
 						const { selection } = state;
 						// NodeSelection(이미지 등 블록 선택)이면 표시 안 함
@@ -716,7 +666,7 @@
 						const rect = el.getBoundingClientRect();
 						tableMenuPos = { x: rect.right - 32, y: rect.top + 4 };
 					}
-				} catch (_) {}
+				} catch { /* 위치 계산 실패 시 무시 */ }
 			},
 			editorProps: {
 				attributes: {
@@ -936,12 +886,7 @@
 	}
 
 	// ===== EXPORT FUNCTIONS =====
-	function toggleExportDropdown() {
-		showExportDropdown = !showExportDropdown;
-	}
-
 	function closeExportDropdown() {
-		showExportDropdown = false;
 	}
 
 	function exportAsMarkdown() {
@@ -952,20 +897,6 @@
 	function exportAsPDF() {
 		downloadPDF();
 		closeExportDropdown();
-	}
-
-	function openImagePicker() {
-		const input = document.createElement('input');
-		input.type = 'file';
-		input.accept = 'image/*';
-		input.multiple = true;
-		input.onchange = async (e) => {
-			const files = Array.from((e.target as HTMLInputElement).files || []);
-			for (const file of files) {
-				await insertImageToTiptap(file);
-			}
-		};
-		input.click();
 	}
 
 	async function downloadPDF() {
@@ -1170,9 +1101,6 @@
 		// Close dropdown when clicking outside
 		const handleClickOutside = (event: MouseEvent) => {
 			const target = event.target as Element;
-			if (!target.closest('.export-dropdown')) {
-				showExportDropdown = false;
-			}
 			if (!target.closest('.hdr-menu')) {
 				showFileMenu = false;
 				showMoreMenu = false;
@@ -1272,7 +1200,9 @@
 <Toast />
 
 {#if showShortcutsModal}
-	<div class="modal-overlay" on:click={() => showShortcutsModal = false} role="dialog" aria-modal="true">
+	<!-- svelte-ignore a11y_click_events_have_key_events -->
+	<div class="modal-overlay" on:click={() => showShortcutsModal = false} role="dialog" aria-modal="true" tabindex="-1">
+		<!-- svelte-ignore a11y_click_events_have_key_events a11y_no_noninteractive_element_interactions -->
 		<div class="modal-content" on:click|stopPropagation role="document">
 			<div class="modal-header">
 				<h2>⌨️ 키보드 단축키</h2>
@@ -1320,6 +1250,7 @@
 {/if}
 
 <div class="app">
+	<!-- svelte-ignore a11y_no_static_element_interactions -->
 	<header class="header" class:header-hidden={!headerVisible} class:header-pinned={!headerAutoHide} on:mouseenter={cancelHeaderHide} on:mouseleave={startHideTimer}>
 		<div class="title-section">
 			<h1>
@@ -1330,7 +1261,8 @@
 			</h1>
 			<div class="status-info">
 				{#if isEditingFilename}
-					<input 
+					<!-- svelte-ignore a11y_autofocus -->
+					<input
 						type="text" 
 						bind:value={tempFileName}
 						on:keydown={handleFilenameKeydown}
@@ -1476,32 +1408,27 @@
 	</section>
 	{/if}
 		<!-- Bubble Menu (텍스트 선택 시 표시) -->
-		<!-- svelte-ignore a11y-no-static-element-interactions -->
+		<!-- svelte-ignore a11y_no-static-element-interactions -->
 		<div bind:this={bubbleMenuElement} class="bubble-menu">
 			<!-- 그룹 1: 기본 서식 -->
-			<!-- svelte-ignore a11y-click-events-have-key-events -->
 			<button on:click={() => tiptapEditor?.chain().focus().toggleBold().run()}
 					class:active={tiptapEditor?.isActive('bold')} title="굵게">
 				<strong>B</strong>
 			</button>
-			<!-- svelte-ignore a11y-click-events-have-key-events -->
 			<button on:click={() => tiptapEditor?.chain().focus().toggleItalic().run()}
 					class:active={tiptapEditor?.isActive('italic')} title="기울임">
 				<em>I</em>
 			</button>
-			<!-- svelte-ignore a11y-click-events-have-key-events -->
 			<button on:click={() => tiptapEditor?.chain().focus().toggleUnderline().run()}
 					class:active={tiptapEditor?.isActive('underline')} title="밑줄"
 					style="text-decoration: underline;">
 				U
 			</button>
-			<!-- svelte-ignore a11y-click-events-have-key-events -->
 			<button on:click={() => tiptapEditor?.chain().focus().toggleStrike().run()}
 					class:active={tiptapEditor?.isActive('strike')} title="취소선"
 					style="text-decoration: line-through;">
 				S
 			</button>
-			<!-- svelte-ignore a11y-click-events-have-key-events -->
 			<button on:click={() => tiptapEditor?.chain().focus().toggleCode().run()}
 					class:active={tiptapEditor?.isActive('code')} title="인라인 코드">
 				<code>`</code>
@@ -1510,9 +1437,8 @@
 			<div class="bubble-separator"></div>
 
 			<!-- 그룹 2: 색상 -->
-			<!-- svelte-ignore a11y-no-static-element-interactions -->
+			<!-- svelte-ignore a11y_no-static-element-interactions -->
 			<div class="bubble-color-group">
-				<!-- svelte-ignore a11y-click-events-have-key-events -->
 				<button
 					class="bubble-color-btn"
 					class:active={showColorPicker}
@@ -1522,11 +1448,10 @@
 					<span class="color-icon" style="border-bottom: 3px solid {tiptapEditor?.getAttributes('textStyle').color || '#ecf0f1'};">A</span>
 				</button>
 				{#if showColorPicker}
-					<!-- svelte-ignore a11y-no-static-element-interactions -->
-					<!-- svelte-ignore a11y-click-events-have-key-events -->
+					<!-- svelte-ignore a11y_no-static-element-interactions -->
+					<!-- svelte-ignore a11y_click-events-have-key-events -->
 					<div class="color-picker-popup" on:click|stopPropagation>
-						{#each TEXT_COLORS as color}
-							<!-- svelte-ignore a11y-click-events-have-key-events -->
+						{#each TEXT_COLORS as color (color.value)}
 							<button
 								class="color-swatch"
 								style="background: {color.value || 'transparent'}; {color.value === '' ? 'border: 2px solid #ccc;' : ''}"
@@ -1547,9 +1472,8 @@
 				{/if}
 			</div>
 
-			<!-- svelte-ignore a11y-no-static-element-interactions -->
+			<!-- svelte-ignore a11y_no-static-element-interactions -->
 			<div class="bubble-color-group">
-				<!-- svelte-ignore a11y-click-events-have-key-events -->
 				<button
 					class="bubble-color-btn"
 					class:active={showHighlightPicker}
@@ -1559,11 +1483,10 @@
 					<span class="highlight-icon" style="background: {tiptapEditor?.getAttributes('highlight').color || 'transparent'};">H</span>
 				</button>
 				{#if showHighlightPicker}
-					<!-- svelte-ignore a11y-no-static-element-interactions -->
-					<!-- svelte-ignore a11y-click-events-have-key-events -->
+					<!-- svelte-ignore a11y_no-static-element-interactions -->
+					<!-- svelte-ignore a11y_click-events-have-key-events -->
 					<div class="color-picker-popup" on:click|stopPropagation>
-						{#each HIGHLIGHT_COLORS as color}
-							<!-- svelte-ignore a11y-click-events-have-key-events -->
+						{#each HIGHLIGHT_COLORS as color (color.value)}
 							<button
 								class="color-swatch"
 								style="background: {color.value || 'transparent'}; {color.value === '' ? 'border: 2px solid #ccc;' : ''}"
@@ -1587,40 +1510,33 @@
 			<div class="bubble-separator"></div>
 
 			<!-- 그룹 3: 헤딩 -->
-			<!-- svelte-ignore a11y-click-events-have-key-events -->
 			<button on:click={() => tiptapEditor?.chain().focus().toggleHeading({level: 1}).run()}
 					class:active={tiptapEditor?.isActive('heading', {level: 1})}>H1</button>
-			<!-- svelte-ignore a11y-click-events-have-key-events -->
 			<button on:click={() => tiptapEditor?.chain().focus().toggleHeading({level: 2}).run()}
 					class:active={tiptapEditor?.isActive('heading', {level: 2})}>H2</button>
-			<!-- svelte-ignore a11y-click-events-have-key-events -->
 			<button on:click={() => tiptapEditor?.chain().focus().toggleHeading({level: 3}).run()}
 					class:active={tiptapEditor?.isActive('heading', {level: 3})}>H3</button>
 
 			<div class="bubble-separator"></div>
 
 			<!-- 그룹 4: 기타 -->
-			<!-- svelte-ignore a11y-click-events-have-key-events -->
 			<button on:click={() => tiptapEditor?.chain().focus().toggleBulletList().run()}
 					class:active={tiptapEditor?.isActive('bulletList')} title="글머리 기호">•</button>
-			<!-- svelte-ignore a11y-click-events-have-key-events -->
 			<button on:click={handleLinkToggle}
 					class:active={tiptapEditor?.isActive('link')} title="링크">🔗</button>
 		</div>
 
 		<!-- Table Handle Button (표 안에 커서 있을 때 우상단에 표시) -->
 		{#if isInTable}
-			<!-- svelte-ignore a11y-click-events-have-key-events -->
 			<button
 				class="table-handle-btn"
 				style="left: {tableMenuPos.x}px; top: {tableMenuPos.y}px;"
 				on:click|stopPropagation={() => tableMenuOpen = !tableMenuOpen}
 				title="표 옵션"
-				role="button"
 			>⊞</button>
 			{#if tableMenuOpen}
-				<!-- svelte-ignore a11y-no-static-element-interactions -->
-				<!-- svelte-ignore a11y-click-events-have-key-events -->
+				<!-- svelte-ignore a11y_no-static-element-interactions -->
+				<!-- svelte-ignore a11y_click-events-have-key-events -->
 				<div class="table-action-menu"
 					style="left: {tableMenuPos.x - 160}px; top: {tableMenuPos.y + 32}px;"
 					on:click|stopPropagation>
@@ -1639,8 +1555,8 @@
 
 		<!-- Slash Command Menu (/를 빈 줄에서 입력 시 표시) -->
 		{#if slashMenuVisible}
-			<!-- svelte-ignore a11y-no-static-element-interactions -->
-			<!-- svelte-ignore a11y-click-events-have-key-events -->
+			<!-- svelte-ignore a11y_no-static-element-interactions -->
+			<!-- svelte-ignore a11y_click-events-have-key-events -->
 			<div class="slash-menu" style="left: {slashMenuPos.x}px; top: {slashMenuPos.y}px;"
 				 on:mousedown|preventDefault>
 				{#if tablePickerVisible}
@@ -1649,10 +1565,10 @@
 							{tablePickerHover.rows > 0 ? `${tablePickerHover.rows} × ${tablePickerHover.cols}` : '크기 선택'}
 						</div>
 						<div class="table-picker-grid">
-							{#each {length: 6} as _, r}
+							{#each {length: 6} as _, r (r)}
 								<div class="table-picker-row">
-									{#each {length: 6} as _, c}
-										<!-- svelte-ignore a11y-click-events-have-key-events -->
+									{#each {length: 6} as _, c (c)}
+										<!-- svelte-ignore a11y_click-events-have-key-events -->
 										<div
 											class="table-picker-cell"
 											class:highlighted={r < tablePickerHover.rows && c < tablePickerHover.cols}
@@ -1660,7 +1576,7 @@
 											on:click={() => insertTableFromPicker(r + 1, c + 1)}
 											role="button"
 											tabindex="0"
-										/>
+										></div>
 									{/each}
 								</div>
 							{/each}
@@ -1668,9 +1584,8 @@
 					</div>
 				{:else}
 					<div class="slash-menu-header">블록 추가 <span class="slash-menu-hint">↑↓ 선택, Enter 실행</span></div>
-					{#each filteredSlashCommands as cmd, i}
+					{#each filteredSlashCommands as cmd, i (i)}
 						{#if cmd.label === '표 삽입'}
-							<!-- svelte-ignore a11y-click-events-have-key-events -->
 							<button
 								class="slash-menu-item"
 								class:active={i === slashSelectedIndex}
@@ -1681,7 +1596,6 @@
 								<span>{cmd.label}</span>
 							</button>
 						{:else}
-							<!-- svelte-ignore a11y-click-events-have-key-events -->
 							<button
 								class="slash-menu-item"
 								class:active={i === slashSelectedIndex}

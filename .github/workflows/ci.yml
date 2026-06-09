@@ -19,9 +19,8 @@ jobs:
       - run: npm ci
       - name: Lint (ESLint)
         run: npm run lint
-      - name: Typecheck (svelte-check, 비차단)
+      - name: Typecheck (svelte-check)
         run: npm run check
-        continue-on-error: true
       - name: Build
         run: npm run build
 

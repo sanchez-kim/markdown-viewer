@@ -30,11 +30,11 @@
 
 	<div class="container">
 		<div class="filter-bar">
-			<button class="chip" class:active={selected === '전체'} on:click={() => (selected = '전체')}>
+			<button class="chip" class:active={selected === '전체'} onclick={() => (selected = '전체')}>
 				전체 <span class="chip-count">{posts.length}</span>
 			</button>
-			{#each categoryCounts as [cat, count]}
-				<button class="chip" class:active={selected === cat} on:click={() => (selected = cat)}>
+			{#each categoryCounts as [cat, count] (cat)}
+				<button class="chip" class:active={selected === cat} onclick={() => (selected = cat)}>
 					{cat} <span class="chip-count">{count}</span>
 				</button>
 			{/each}

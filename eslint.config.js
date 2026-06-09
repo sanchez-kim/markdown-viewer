@@ -25,7 +25,11 @@ export default ts.config(
 		// 초기에 빠르게 개발된 코드베이스 — 실제 버그 위주로 잡고, 스타일/사소한 경고는 완화
 		rules: {
 			'@typescript-eslint/no-explicit-any': 'off',
-			'@typescript-eslint/no-unused-vars': 'warn',
+			// `_` 접두는 의도적 미사용(예: each의 미사용 항목 자리표시자) — 무시
+			'@typescript-eslint/no-unused-vars': [
+				'warn',
+				{ argsIgnorePattern: '^_', varsIgnorePattern: '^_', caughtErrorsIgnorePattern: '^_' }
+			],
 			'@typescript-eslint/no-unused-expressions': 'off',
 			'@typescript-eslint/ban-ts-comment': 'off',
 			'no-unused-vars': 'off',
@@ -38,7 +42,8 @@ export default ts.config(
 			'svelte/infinite-reactive-loop': 'off',
 			'svelte/prefer-svelte-reactivity': 'off',
 			'svelte/no-unused-svelte-ignore': 'warn',
-			'no-useless-escape': 'warn',
+			// JSON-LD의 `<\/script>`는 프리렌더 HTML 안전을 위한 의도적 이스케이프 — 오탐이라 끔
+			'no-useless-escape': 'off',
 			'no-useless-assignment': 'off',
 			'no-empty': 'warn'
 		}
