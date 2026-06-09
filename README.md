@@ -2,7 +2,7 @@
 
 노션처럼 쓰는 무료 마크다운 에디터. 브라우저에서 바로, 설치 없이.
 
-🌐 **[라이브 데모 보기](https://easymd.netlify.app/)**
+🌐 **[easy-md.com](https://easy-md.com)**
 
 [![GitHub Sponsors](https://img.shields.io/badge/Sponsor-❤️-ff69b4?style=for-the-badge&logo=github-sponsors)](https://github.com/sponsors/sanchez-kim)
 [![Buy Me a Coffee](https://img.shields.io/badge/Buy%20Me%20a%20Coffee-☕-FFDD00?style=for-the-badge&logo=buy-me-a-coffee&logoColor=black)](https://buymeacoffee.com/sanchezkim7)
@@ -33,13 +33,12 @@
 ### 🖼️ **인라인 이미지 (Notion처럼)**
 - **드래그 앤 드롭**: 에디터에 이미지 파일을 바로 드래그
 - **클립보드 붙여넣기**: 스크린샷 등을 `Ctrl+V`로 즉시 삽입
-- **파일 선택**: `🖼️ 이미지` 버튼으로 업로드
 - **캔버스 압축**: 최대 1280px로 자동 리사이즈 (JPEG 85% 품질)
 - **리사이즈 핸들**: 이미지 좌우 드래그로 크기 조절
 
 ### 💾 **자동 저장 및 파일 관리**
-- **자동 저장**: 5분마다 LocalStorage에 자동 저장
-- **수동 저장**: `💾 저장` 버튼 또는 `Ctrl+S`
+- **상시 자동 저장**: 변경 후 잠시 멈추면 LocalStorage에 자동 저장 (`Ctrl+S`로 즉시 저장도 가능)
+- **다중 문서 · 버전 히스토리**: 여러 문서를 관리하고 이전 버전으로 복원
 - **파일명 편집**: 헤더 파일명 클릭 → 인라인 변경
 - **파일 열기**: 로컬 `.md` 파일 불러오기 (`Ctrl+O`)
 

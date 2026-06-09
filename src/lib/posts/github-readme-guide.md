@@ -1,6 +1,6 @@
 ---
 title: GitHub README를 프로처럼 작성하는 방법
-category: 실전 가이드
+category: 실전 활용
 date: 2026-04-22
 readingTime: 7
 excerpt: 첫인상을 결정하는 GitHub README. 방문자를 사로잡는 구조와 뱃지, 스크린샷 활용법까지 실전 노하우를 공유합니다.
