@@ -1,3 +1,10 @@
 [build]
   command = "npm run build"
   publish = "build"
+
+# 구 도메인(netlify.app) → 커스텀 도메인으로 301 통합 (중복 콘텐츠 방지, 색인 신호 일원화)
+[[redirects]]
+  from = "https://easymd.netlify.app/*"
+  to = "https://easy-md.com/:splat"
+  status = 301
+  force = true
