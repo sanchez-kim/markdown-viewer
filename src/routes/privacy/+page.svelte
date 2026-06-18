@@ -72,6 +72,21 @@
 					https://policies.google.com/privacy
 				</a>
 			</p>
+
+			<h3>2.4 분석 정보 (Google Analytics)</h3>
+			<p>
+				서비스는 방문 통계 분석을 위해 Google Analytics(GA4)를 사용합니다.
+				Google Analytics는 쿠키를 사용하여 페이지 조회, 방문 기기·브라우저, 참조 경로 등
+				익명화된 사용 데이터를 수집하며, 개별 문서 내용은 수집하지 않습니다.
+			</p>
+			<p>
+				브라우저 설정에서 쿠키를 거부하거나
+				<a
+					href="https://tools.google.com/dlpage/gaoptout"
+					target="_blank"
+					rel="noopener">Google Analytics 차단 부가기능</a
+				>을 통해 수집을 거부할 수 있습니다.
+			</p>
 		</section>
 
 		<section>
@@ -92,6 +107,7 @@
 			<p>제3자 서비스:</p>
 			<ul>
 				<li><strong>Cloudflare:</strong> 익명 웹 분석</li>
+				<li><strong>Google Analytics:</strong> 방문 통계 분석</li>
 				<li><strong>Google AdSense:</strong> 광고 제공</li>
 				<li><strong>Netlify:</strong> 웹 호스팅</li>
 			</ul>

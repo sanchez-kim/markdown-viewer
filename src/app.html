@@ -6,6 +6,17 @@
 		<meta name="viewport" content="width=device-width, initial-scale=1" />
 		<meta name="theme-color" content="#667eea" />
 		%sveltekit.head%
+		<!-- Google Analytics (GA4) -->
+		<script async src="https://www.googletagmanager.com/gtag/js?id=G-DKLX47C3F0"></script>
+		<script>
+			window.dataLayer = window.dataLayer || [];
+			function gtag() {
+				dataLayer.push(arguments);
+			}
+			gtag('js', new Date());
+			gtag('config', 'G-DKLX47C3F0');
+		</script>
+		<!-- End Google Analytics -->
 		<!-- Cloudflare Web Analytics -->
 		<script defer src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "3e50e7fba57343d693926bf5bd906590"}'></script>
 		<!-- End Cloudflare Web Analytics -->
