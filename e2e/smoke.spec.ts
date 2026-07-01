@@ -51,3 +51,36 @@ test('콘텐츠 페이지에 통일 브랜드 헤더와 로고가 있다', async
 	// 로고 클릭 시 홈으로
 	await expect(brand).toHaveAttribute('href', '/');
 });
+
+test('탭으로 여러 문서를 전환할 수 있다', async ({ page }) => {
+	await page.goto('/editor');
+	await page.evaluate(() => localStorage.clear());
+	await page.reload();
+
+	const editor = page.locator('.tiptap-container .ProseMirror');
+	await expect(editor).toBeVisible();
+
+	// 문서 1개일 땐 닫기 버튼이 없어야 한다(마지막 탭은 닫을 수 없음)
+	await expect(page.locator('.tab-bar .tab')).toHaveCount(1);
+	await expect(page.locator('.tab-bar .tab-close')).toHaveCount(0);
+
+	await editor.click();
+	await page.keyboard.type('문서 A');
+	await page.waitForTimeout(1500); // 자동저장 디바운스 대기
+
+	// 새 탭 생성
+	await page.locator('.new-tab-btn').click();
+	await expect(page.locator('.tab-bar .tab')).toHaveCount(2);
+	await editor.click();
+	await page.keyboard.type('문서 B');
+	await page.waitForTimeout(1500);
+
+	// 첫 번째 탭으로 전환하면 문서 A 내용이 복원되어야 한다
+	await page.locator('.tab-bar .tab').first().click();
+	await expect(editor).toContainText('문서 A');
+
+	// 활성 탭을 닫으면 남은 탭(문서 B)으로 전환된다
+	await page.locator('.tab-bar .tab.active .tab-close').click();
+	await expect(page.locator('.tab-bar .tab')).toHaveCount(1);
+	await expect(editor).toContainText('문서 B');
+});
