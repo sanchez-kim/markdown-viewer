@@ -4,6 +4,7 @@
 
 - **배포**: https://easy-md.com (Netlify, `main` 브랜치 push 시 자동 배포)
 - **스택**: SvelteKit 2 (Svelte 5 룬) · adapter-static(전체 prerender) · Tiptap 3(WYSIWYG 에디터) · marked · TypeScript
+- **Git 워크플로우**: `main` 직접 push 금지, PR 필수 (아래 "Git 워크플로우" 참고)
 
 ## 개발 명령
 
@@ -20,6 +21,15 @@ npm run test:e2e      # Playwright E2E 스모크 (build+preview 자동 기동)
 ```
 
 배포: `main`에 push → Netlify가 자동 빌드·배포. 별도 배포 명령 없음.
+
+## Git 워크플로우 (2026-06-18 도입)
+
+`main` push = 즉시 프로덕션 배포이므로, 실수로 검증 안 된 변경이 바로 라이브에 나가는 걸 막기 위해 PR 기반 흐름을 쓴다.
+
+- **`main`에 직접 push 금지.** 브랜치 만들고 PR을 올려서 병합할 것. 저장소가 Public이라 GitHub 브랜치 보호 규칙이 무료로 적용되어 있음(`main`): PR 필수, CI 체크(`Lint · Typecheck · Build`, `E2E 스모크 (Playwright)`) 통과 필수, 리포지토리 관리자도 예외 없음(`enforce_admins`). 승인 리뷰어 수는 0(1인 프로젝트라 셀프 머지 가능, CI 통과만 게이트).
+- **PR을 올리면 Netlify가 자동으로 Deploy Preview URL을 생성**한다(무료 플랜 기본 포함, 별도 설정 불필요). PR 코멘트/Netlify 대시보드에서 프리뷰 링크 확인 → 실제로 확인 후 이상 없으면 머지.
+- 머지되면 그때 `main`이 갱신되고 Netlify가 프로덕션에 배포한다.
+- 브랜치 보호 규칙은 GitHub 저장소 설정(`Settings → Branches`)에 있으며, `gh api repos/{owner}/{repo}/branches/main/protection`으로 조회·수정 가능.
 
 ## 품질·테스트
 
