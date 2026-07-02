@@ -13,6 +13,7 @@
 	import { pushHistory } from '$lib/stores/history';
 	import { decodeShareHash, isShareLink, clearShareHash } from '$lib/utils/shareLink';
 	import DocList from '$lib/components/DocList.svelte';
+	import TabBar from '$lib/components/TabBar.svelte';
 	import { Editor, Extension, InputRule } from '@tiptap/core';
 	import { DOMParser as PMDOMParser, DOMSerializer as PMDOMSerializer } from '@tiptap/pm/model';
 	import StarterKit from '@tiptap/starter-kit';
@@ -253,6 +254,12 @@
 	function deleteDocument(id: string) {
 		const { content, meta } = docStore.deleteDoc(id);
 		if (meta) loadDoc(content, meta.title, meta.id);
+	}
+
+	function closeTab(id: string) {
+		if (id === activeDocId && saveStatus === 'unsaved') saveToLocal('자동저장');
+		const { switched, content, meta } = docStore.closeTab(id);
+		if (switched && meta) loadDoc(content, meta.title, meta.id);
 	}
 
 	function restoreVersion(markdown: string) {
@@ -1360,6 +1367,8 @@
 			</div>
 		</div>
 	</header>
+
+	<TabBar activeDocId={activeDocId} onSwitch={switchDocument} onNew={newDocument} onClose={closeTab} />
 
 	<div class="editor-body">
 	{#if showDocList}
