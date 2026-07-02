@@ -1,5 +1,4 @@
 <script lang="ts">
-	import favicon from '$lib/assets/favicon.ico';
 	import { page } from '$app/state';
 	import { SITE_URL } from '$lib/config';
 
@@ -14,8 +13,6 @@
 </script>
 
 <svelte:head>
-	<link rel="icon" href={favicon} />
-
 	<!-- Canonical URL -->
 	<link rel="canonical" href={canonicalUrl} />
 
