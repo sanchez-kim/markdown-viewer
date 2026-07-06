@@ -762,6 +762,25 @@
 							return true;
 						}
 					}
+					// 목록 안에서 Tab/Shift+Tab은 항상 들여쓰기·내어쓰기로 소비한다.
+					// (들여쓸 형제가 없어 sink가 실패해도 기본 브라우저 동작으로 넘기면
+					// 포커스가 에디터 밖 버튼/링크로 튕겨나가는 문제가 있었음)
+					if (event.key === 'Tab' && tiptapEditor) {
+						const itemType = tiptapEditor.isActive('taskItem')
+							? 'taskItem'
+							: tiptapEditor.isActive('listItem')
+								? 'listItem'
+								: null;
+						if (itemType) {
+							event.preventDefault();
+							if (event.shiftKey) {
+								tiptapEditor.chain().focus().liftListItem(itemType).run();
+							} else {
+								tiptapEditor.chain().focus().sinkListItem(itemType).run();
+							}
+							return true;
+						}
+					}
 					return false;
 				},
 				handleDOMEvents: {
