@@ -15,6 +15,20 @@ test('에디터에서 타이핑이 동작한다 (편집 불가 회귀 방지)', 
 	await expect(editor).toContainText('스모크 테스트 입력');
 });
 
+test('목록의 첫 항목에서 Tab을 눌러도 포커스가 에디터 밖으로 빠지지 않는다', async ({ page }) => {
+	await page.goto('/editor');
+	await page.evaluate(() => localStorage.clear());
+	await page.reload();
+
+	const editor = page.locator('.tiptap-container .ProseMirror');
+	await expect(editor).toBeVisible();
+	await editor.click();
+	await page.keyboard.type('- 첫 항목');
+	await page.keyboard.press('Tab');
+
+	await expect(editor).toBeFocused();
+});
+
 test('랜딩에서 "지금 바로 써보기"로 에디터에 진입한다', async ({ page }) => {
 	await page.goto('/');
 	await expect(page.locator('.lp-hero')).toBeVisible();
