@@ -37,3 +37,6 @@ src-tauri/
 /test-results/
 /playwright-report/
 /playwright/.cache/
+
+# 로컬 전용 설계/전략 문서 (커밋 안 함)
+/ROADMAP.md
