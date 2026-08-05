@@ -1190,18 +1190,12 @@
 	<meta name="author" content="Sanchez Kim" />
 
 	<!-- Open Graph / Facebook -->
-	<meta property="og:type" content="website" />
-	<meta property="og:url" content="{SITE_URL}/editor" />
 	<meta property="og:title" content="마크다운 에디터 | EasyMD" />
 	<meta property="og:description" content="실시간 미리보기로 글을 쓰고 PDF·Word·마크다운으로 내보내세요. 자동 저장, 로그인 불필요." />
-	<meta property="og:image" content="{SITE_URL}/og-image.png" />
 
-	<!-- Twitter -->
-	<meta property="twitter:card" content="summary_large_image" />
-	<meta property="twitter:url" content="{SITE_URL}/editor" />
-	<meta property="twitter:title" content="마크다운 에디터 | EasyMD" />
-	<meta property="twitter:description" content="실시간 미리보기로 글을 쓰고 PDF·Word·마크다운으로 내보내세요. 자동 저장, 로그인 불필요." />
-	<meta property="twitter:image" content="{SITE_URL}/og-image.png" />
+	<!-- Twitter — card/image는 +layout.svelte 공통값 사용 -->
+	<meta name="twitter:title" content="마크다운 에디터 | EasyMD" />
+	<meta name="twitter:description" content="실시간 미리보기로 글을 쓰고 PDF·Word·마크다운으로 내보내세요. 자동 저장, 로그인 불필요." />
 
 	<!-- JSON-LD 구조화 데이터 -->
 	{@html `<script type="application/ld+json">${JSON.stringify({

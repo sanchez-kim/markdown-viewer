@@ -11,6 +11,10 @@
 <svelte:head>
 	<title>소개 - 이지 마크다운 (EasyMD)</title>
 	<meta name="description" content="이지 마크다운은 브라우저에서 바로 사용할 수 있는 무료 마크다운 에디터입니다. 개인정보 수집 없이 안전하게 사용하세요." />
+
+	<!-- 나머지 OG/트위터 태그는 +layout.svelte 공통값 사용 -->
+	<meta property="og:title" content="소개 - 이지 마크다운 (EasyMD)" />
+	<meta property="og:description" content="이지 마크다운은 브라우저에서 바로 사용할 수 있는 무료 마크다운 에디터입니다. 개인정보 수집 없이 안전하게 사용하세요." />
 </svelte:head>
 
 <div class="about-page">

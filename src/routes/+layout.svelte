@@ -1,10 +1,13 @@
 <script lang="ts">
 	import { page } from '$app/state';
-	import { SITE_URL } from '$lib/config';
+	import { SITE_URL, SITE_NAME } from '$lib/config';
 
 	let { children } = $props();
 
 	const canonicalUrl = $derived(`${SITE_URL}${page.url.pathname}`);
+
+	// 블로그 글만 article, 나머지는 website
+	const ogType = $derived(page.url.pathname.startsWith('/blog/') ? 'article' : 'website');
 
 	// 자체 헤더가 있는 랜딩(/)·에디터(/editor)를 제외한 모든 페이지에 통일 브랜드 헤더 표시
 	const showBrandHeader = $derived(
@@ -13,11 +16,23 @@
 </script>
 
 <svelte:head>
-	<!-- Canonical URL -->
+	<!-- Canonical URL — 모든 페이지가 여기서 한 번만 선언한다(개별 페이지에서 중복 선언 금지) -->
 	<link rel="canonical" href={canonicalUrl} />
 
 	<meta name="google-site-verification" content="5-LvgZ7FAr7MVolS-rpUAl9wzI3Cl0hUmD4vt9o2fpE" />
 
+	<!--
+		공유 카드 공통값. 아래 태그는 여기서만 선언하고,
+		개별 +page.svelte는 og:title / og:description 만 선언한다 —
+		svelte:head는 중복 제거를 하지 않으므로 양쪽에 쓰면 태그가 두 번 나간다.
+	-->
+	<meta property="og:site_name" content={SITE_NAME} />
+	<meta property="og:locale" content="ko_KR" />
+	<meta property="og:url" content={canonicalUrl} />
+	<meta property="og:type" content={ogType} />
+	<meta property="og:image" content={`${SITE_URL}/og-image.png`} />
+	<meta name="twitter:card" content="summary_large_image" />
+	<meta name="twitter:image" content={`${SITE_URL}/og-image.png`} />
 </svelte:head>
 
 {#if showBrandHeader}

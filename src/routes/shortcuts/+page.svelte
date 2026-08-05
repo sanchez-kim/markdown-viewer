@@ -1,7 +1,6 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import { themeStore } from '$lib/stores/theme';
-	import { SITE_URL } from '$lib/config';
 
 
 
@@ -80,8 +79,6 @@
 	<meta name="keywords" content="마크다운 에디터 단축키, markdown 단축키, EasyMD 단축키, 마크다운 키보드 단축키" />
 	<meta property="og:title" content="단축키 모음 — EasyMD" />
 	<meta property="og:description" content="EasyMD 마크다운 에디터의 모든 단축키를 한눈에 확인하세요." />
-	<meta property="og:url" content="{SITE_URL}/shortcuts" />
-	<meta property="og:type" content="article" />
 </svelte:head>
 
 <div class="shortcuts-page">

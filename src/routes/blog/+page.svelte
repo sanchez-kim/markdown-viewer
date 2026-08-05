@@ -20,6 +20,10 @@
 <svelte:head>
 	<title>블로그 - 이지 마크다운 | 마크다운 가이드 & 팁</title>
 	<meta name="description" content="마크다운 기초부터 실무 활용까지. 마크다운 문법 가이드, GitHub README 작성법, 업무 문서 템플릿 등 실용적인 글을 제공합니다." />
+
+	<!-- 나머지 OG/트위터 태그는 +layout.svelte 공통값 사용 -->
+	<meta property="og:title" content="블로그 - 이지 마크다운 | 마크다운 가이드 & 팁" />
+	<meta property="og:description" content="마크다운 기초부터 실무 활용까지. 마크다운 문법 가이드, GitHub README 작성법, 업무 문서 템플릿 등 실용적인 글을 제공합니다." />
 </svelte:head>
 
 <div class="blog-page">

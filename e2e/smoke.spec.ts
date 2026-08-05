@@ -57,6 +57,12 @@ test('블로그 글이 정상 렌더된다', async ({ page }) => {
 	await expect(page.locator('.post-content')).toContainText('줄바꿈');
 });
 
+test('없는 URL은 200이 아니라 404를 반환한다 (소프트 404 회귀 방지)', async ({ page }) => {
+	const res = await page.goto('/this-page-does-not-exist');
+	expect(res?.status()).toBe(404);
+	await expect(page.locator('.error-page')).toBeVisible();
+});
+
 test('콘텐츠 페이지에 통일 브랜드 헤더와 로고가 있다', async ({ page }) => {
 	await page.goto('/guide');
 	const brand = page.locator('.site-header .site-brand');

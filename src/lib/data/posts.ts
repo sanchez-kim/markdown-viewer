@@ -4,6 +4,8 @@ export interface Post {
 	slug: string;
 	title: string;
 	date: string;
+	/** 본문을 의미 있게 고친 날(frontmatter `updated`). 없으면 date와 같다. */
+	updated: string;
 	excerpt: string;
 	category: string;
 	readingTime: number;
@@ -20,6 +22,7 @@ const rawFiles = import.meta.glob('../posts/*.md', {
 interface Frontmatter {
 	title?: string;
 	date?: string;
+	updated?: string;
 	excerpt?: string;
 	category?: string;
 	readingTime?: string;
@@ -60,6 +63,7 @@ export const posts: Post[] = Object.entries(rawFiles)
 			slug,
 			title: data.title ?? slug,
 			date: data.date ?? '',
+			updated: data.updated || (data.date ?? ''),
 			excerpt: data.excerpt ?? '',
 			category: data.category ?? '기타',
 			readingTime: data.readingTime ? Number(data.readingTime) : estimateReadingTime(plain),

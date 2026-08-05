@@ -26,18 +26,18 @@
 		<meta name="description" content={post.excerpt} />
 		<meta property="og:title" content={post.title} />
 		<meta property="og:description" content={post.excerpt} />
-		<meta property="og:type" content="article" />
-		<meta property="og:url" content={`${SITE_URL}/blog/${post.slug}`} />
-		<meta property="og:image" content={`${SITE_URL}/og-image.png`} />
 		<meta property="article:published_time" content={post.date} />
-		<link rel="canonical" href={`${SITE_URL}/blog/${post.slug}`} />
+		<meta property="article:modified_time" content={post.updated} />
+		<meta property="article:section" content={post.category} />
+		<!-- canonical·og:url·og:type·og:image는 +layout.svelte에서 선언 (중복 방지) -->
 		{@html `<script type="application/ld+json">${JSON.stringify({
 			"@context": "https://schema.org",
 			"@type": "BlogPosting",
 			"headline": post.title,
 			"description": post.excerpt,
 			"datePublished": post.date,
-			"dateModified": post.date,
+			"dateModified": post.updated,
+			"articleSection": post.category,
 			"author": { "@type": "Person", "name": "Sanchez Kim" },
 			"publisher": {
 				"@type": "Organization",
@@ -47,6 +47,15 @@
 			"mainEntityOfPage": { "@type": "WebPage", "@id": `${SITE_URL}/blog/${post.slug}` },
 			"image": `${SITE_URL}/og-image.png`,
 			"inLanguage": "ko"
+		})}<\/script>`}
+		{@html `<script type="application/ld+json">${JSON.stringify({
+			"@context": "https://schema.org",
+			"@type": "BreadcrumbList",
+			"itemListElement": [
+				{ "@type": "ListItem", "position": 1, "name": "홈", "item": SITE_URL },
+				{ "@type": "ListItem", "position": 2, "name": "블로그", "item": `${SITE_URL}/blog` },
+				{ "@type": "ListItem", "position": 3, "name": post.title }
+			]
 		})}<\/script>`}
 	{/if}
 </svelte:head>

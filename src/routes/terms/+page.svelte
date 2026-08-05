@@ -10,6 +10,10 @@
 <svelte:head>
 	<title>이용약관 - 이지 마크다운 (EasyMD)</title>
 	<meta name="description" content="이지 마크다운(EasyMD) 서비스 이용약관입니다. 무료 웹 기반 마크다운 에디터 이용 시 적용되는 조건과 책임 범위를 안내합니다." />
+
+	<!-- 나머지 OG/트위터 태그는 +layout.svelte 공통값 사용 -->
+	<meta property="og:title" content="이용약관 - 이지 마크다운 (EasyMD)" />
+	<meta property="og:description" content="무료 웹 기반 마크다운 에디터 이용 시 적용되는 조건과 책임 범위를 안내합니다." />
 </svelte:head>
 
 <div class="legal-page">

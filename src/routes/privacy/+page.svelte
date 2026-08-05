@@ -10,6 +10,10 @@
 <svelte:head>
 	<title>개인정보처리방침 - 이지 마크다운 (EasyMD)</title>
 	<meta name="description" content="이지 마크다운(EasyMD)의 개인정보처리방침입니다. 작성한 문서는 서버로 전송되지 않고 브라우저 LocalStorage에만 저장되며, 개인정보를 수집하지 않습니다." />
+
+	<!-- 나머지 OG/트위터 태그는 +layout.svelte 공통값 사용 -->
+	<meta property="og:title" content="개인정보처리방침 - 이지 마크다운 (EasyMD)" />
+	<meta property="og:description" content="작성한 문서는 서버로 전송되지 않고 브라우저 LocalStorage에만 저장되며, 개인정보를 수집하지 않습니다." />
 </svelte:head>
 
 <div class="legal-page">
