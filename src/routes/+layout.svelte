@@ -1,8 +1,13 @@
 <script lang="ts">
 	import { page } from '$app/state';
 	import { SITE_URL, SITE_NAME } from '$lib/config';
+	import { breadcrumbLd, footerLinks } from '$lib/seo';
 
 	let { children } = $props();
+
+	const breadcrumb = $derived(breadcrumbLd(page.url.pathname));
+	const mainLinks = footerLinks('main');
+	const legalLinks = footerLinks('legal');
 
 	const canonicalUrl = $derived(`${SITE_URL}${page.url.pathname}`);
 
@@ -33,6 +38,11 @@
 	<meta property="og:image" content={`${SITE_URL}/og-image.png`} />
 	<meta name="twitter:card" content="summary_large_image" />
 	<meta name="twitter:image" content={`${SITE_URL}/og-image.png`} />
+
+	<!-- 정적 페이지 BreadcrumbList. 블로그 글은 제목이 필요해 각 페이지가 직접 만든다. -->
+	{#if breadcrumb}
+		{@html `<script type="application/ld+json">${breadcrumb}<\/script>`}
+	{/if}
 </svelte:head>
 
 {#if showBrandHeader}
@@ -47,7 +57,76 @@
 
 {@render children?.()}
 
+<!--
+	공용 푸터. 브랜드 헤더와 같은 조건으로만 표시한다(랜딩·에디터는 자체 푸터/전체화면).
+	모든 콘텐츠 페이지가 서로 연결되므로 고아 페이지가 생기지 않는다 —
+	실제로 /changelog 는 어디서도 링크되지 않는 고아 페이지였다.
+-->
+{#if showBrandHeader}
+	<footer class="site-footer">
+		<nav class="footer-links" aria-label="사이트 메뉴">
+			{#each mainLinks as l (l.path)}
+				<a href={l.path}>{l.name}</a>
+			{/each}
+		</nav>
+		<nav class="footer-links footer-legal" aria-label="정책">
+			{#each legalLinks as l (l.path)}
+				<a href={l.path}>{l.name}</a>
+			{/each}
+			<a href="https://github.com/sanchez-kim/markdown-viewer" target="_blank" rel="noopener">GitHub</a>
+		</nav>
+		<p class="footer-copy">© 2026 이지 마크다운 (EasyMD)</p>
+	</footer>
+{/if}
+
 <style>
+	.site-footer {
+		margin-top: 3rem;
+		padding: 2rem 1.5rem 2.5rem;
+		border-top: 1px solid #ececf1;
+		background: #fafafc;
+		text-align: center;
+	}
+
+	.footer-links {
+		display: flex;
+		flex-wrap: wrap;
+		justify-content: center;
+		gap: 0.5rem 1.1rem;
+		margin-bottom: 0.75rem;
+	}
+
+	.footer-links a {
+		color: #56566d;
+		text-decoration: none;
+		font-size: 0.88rem;
+	}
+
+	.footer-links a:hover {
+		color: #667eea;
+		text-decoration: underline;
+	}
+
+	.footer-legal a {
+		font-size: 0.82rem;
+		color: #8a8a9e;
+	}
+
+	.footer-copy {
+		margin: 0;
+		font-size: 0.8rem;
+		color: #9a9aae;
+	}
+
+	:global(html.dark) .site-footer {
+		background: #0d1117;
+		border-top-color: #21262d;
+	}
+	:global(html.dark) .footer-links a { color: #9aa4b2; }
+	:global(html.dark) .footer-links a:hover { color: #a9b6ff; }
+	:global(html.dark) .footer-legal a { color: #6e7681; }
+	:global(html.dark) .footer-copy { color: #6e7681; }
+
 	.site-header {
 		display: flex;
 		align-items: center;

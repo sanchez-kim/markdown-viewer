@@ -137,6 +137,8 @@
 			<span class="sep">|</span>
 			<a href="/blog">블로그</a>
 			<span class="sep">|</span>
+			<a href="/changelog">업데이트 내역</a>
+			<span class="sep">|</span>
 			<a href="/privacy">개인정보처리방침</a>
 			<span class="sep">|</span>
 			<a href="/terms">이용약관</a>

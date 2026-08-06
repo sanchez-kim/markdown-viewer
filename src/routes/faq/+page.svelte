@@ -81,11 +81,13 @@
 						<span class="q-text">{faq.question}</span>
 						<span class="q-arrow" aria-hidden="true">{openIndex === i ? '▲' : '▼'}</span>
 					</button>
-					{#if openIndex === i}
-						<div class="faq-answer">
-							<p>{faq.answer}</p>
-						</div>
-					{/if}
+					<!--
+						답변은 접혀 있어도 항상 DOM에 렌더한다. {#if}로 감싸면 정적 HTML에
+						질문만 남아 크롤러가 답변을 전혀 못 보고, FAQ JSON-LD와도 내용이 어긋난다.
+					-->
+					<div class="faq-answer" hidden={openIndex !== i}>
+						<p>{faq.answer}</p>
+					</div>
 				</div>
 			{/each}
 		</section>
@@ -224,6 +226,10 @@
 		flex-shrink: 0;
 		color: var(--text-tertiary, #7f8c8d);
 		font-size: 0.75rem;
+	}
+
+	.faq-answer[hidden] {
+		display: none;
 	}
 
 	.faq-answer {

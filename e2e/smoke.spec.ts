@@ -57,6 +57,23 @@ test('블로그 글이 정상 렌더된다', async ({ page }) => {
 	await expect(page.locator('.post-content')).toContainText('줄바꿈');
 });
 
+// JS를 실행하지 않은 원본 HTML을 본다 — 크롤러가 보는 것과 같은 상태.
+// page.goto()는 하이드레이션 후를 보므로 이 회귀를 잡지 못한다.
+// <script>를 걷어내는 것이 핵심: FAQ JSON-LD에도 답변 텍스트가 들어 있어서,
+// 그냥 검사하면 본문에 답변이 없어도 통과해버린다.
+const visibleHtml = (html: string) => html.replace(/<script[\s\S]*?<\/script>/g, '');
+
+test('FAQ 답변이 JS 없이도 본문 HTML에 들어 있다', async ({ request }) => {
+	const html = visibleHtml(await (await request.get('/faq')).text());
+	expect(html).toContain('완전히 무료입니다');
+	expect(html).toContain('localStorage');
+});
+
+test('블로그 글 본문이 JS 없이도 본문 HTML에 들어 있다', async ({ request }) => {
+	const html = visibleHtml(await (await request.get('/blog/markdown-linebreak')).text());
+	expect(html).toContain('줄바꿈');
+});
+
 test('없는 URL은 200이 아니라 404를 반환한다 (소프트 404 회귀 방지)', async ({ page }) => {
 	const res = await page.goto('/this-page-does-not-exist');
 	expect(res?.status()).toBe(404);

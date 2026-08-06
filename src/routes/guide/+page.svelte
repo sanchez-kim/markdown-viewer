@@ -44,12 +44,16 @@
 				<div class="example-col">
 					<div class="example-label">렌더링 결과</div>
 					<div class="render-box">
-						<h1 class="preview-h1">제목 1</h1>
-						<h2 class="preview-h2">제목 2</h2>
-						<h3 class="preview-h3">제목 3</h3>
-						<h4 class="preview-h4">제목 4</h4>
-						<h5 class="preview-h5">제목 5</h5>
-						<h6 class="preview-h6">제목 6</h6>
+						<!--
+							"렌더링 결과"를 보여주는 예시일 뿐이라 실제 헤딩 태그를 쓰지 않는다.
+							h1을 쓰면 페이지 h1이 2개가 되고 문서 개요도 망가진다(모양은 CSS 동일).
+						-->
+						<div class="preview-h1">제목 1</div>
+						<div class="preview-h2">제목 2</div>
+						<div class="preview-h3">제목 3</div>
+						<div class="preview-h4">제목 4</div>
+						<div class="preview-h5">제목 5</div>
+						<div class="preview-h6">제목 6</div>
 					</div>
 				</div>
 			</div>
@@ -471,12 +475,13 @@ ___</code></pre>
 		margin-bottom: 0.3rem;
 	}
 
-	.preview-h1 { font-size: 1.6rem; margin: 0.1rem 0; }
-	.preview-h2 { font-size: 1.3rem; margin: 0.1rem 0; }
-	.preview-h3 { font-size: 1.1rem; margin: 0.1rem 0; }
-	.preview-h4 { font-size: 1rem; margin: 0.1rem 0; }
-	.preview-h5 { font-size: 0.9rem; margin: 0.1rem 0; }
-	.preview-h6 { font-size: 0.8rem; margin: 0.1rem 0; color: #666; }
+	/* div로 바꿨으므로 헤딩 기본 굵기를 CSS로 직접 준다 */
+	.preview-h1 { font-size: 1.6rem; margin: 0.1rem 0; font-weight: 700; }
+	.preview-h2 { font-size: 1.3rem; margin: 0.1rem 0; font-weight: 700; }
+	.preview-h3 { font-size: 1.1rem; margin: 0.1rem 0; font-weight: 700; }
+	.preview-h4 { font-size: 1rem; margin: 0.1rem 0; font-weight: 700; }
+	.preview-h5 { font-size: 0.9rem; margin: 0.1rem 0; font-weight: 700; }
+	.preview-h6 { font-size: 0.8rem; margin: 0.1rem 0; font-weight: 700; color: #666; }
 
 	.preview-hr {
 		border: none;
