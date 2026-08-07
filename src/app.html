@@ -7,24 +7,48 @@
 		<meta name="viewport" content="width=device-width, initial-scale=1" />
 		<meta name="theme-color" content="#667eea" />
 		%sveltekit.head%
-		<!-- Google Analytics (GA4) -->
-		<script async src="https://www.googletagmanager.com/gtag/js?id=G-DKLX47C3F0"></script>
+		<!--
+			분석·광고 스크립트는 프로덕션 도메인에서만 로드한다.
+
+			조건 없이 넣어두면 localhost 개발 서버와 CI의 E2E 실행이 GA4에 실제 방문자로
+			집계된다. 실제로 그렇게 되고 있었다 — 랜딩페이지 상위가 E2E가 도는 경로
+			(/editor, /guide, /blog, /blog/markdown-linebreak, /this-page-does-not-exist)로
+			채워지고 전부 체류 0초였다. 그 상태로는 유입 데이터를 신뢰할 수 없다.
+			AdSense도 마찬가지로 프로덕션이 아닌 곳(로컬·Deploy Preview)에서 로드될 이유가 없다.
+		-->
 		<script>
-			window.dataLayer = window.dataLayer || [];
-			function gtag() {
-				dataLayer.push(arguments);
-			}
-			gtag('js', new Date());
-			gtag('config', 'G-DKLX47C3F0');
+			(function () {
+				if (location.hostname !== 'easy-md.com') return;
+
+				var add = function (src, attrs) {
+					var s = document.createElement('script');
+					s.src = src;
+					s.async = true;
+					for (var k in attrs) s.setAttribute(k, attrs[k]);
+					document.head.appendChild(s);
+				};
+
+				// Google Analytics (GA4)
+				window.dataLayer = window.dataLayer || [];
+				window.gtag = function () {
+					window.dataLayer.push(arguments);
+				};
+				window.gtag('js', new Date());
+				window.gtag('config', 'G-DKLX47C3F0');
+				add('https://www.googletagmanager.com/gtag/js?id=G-DKLX47C3F0');
+
+				// Cloudflare Web Analytics
+				add('https://static.cloudflareinsights.com/beacon.min.js', {
+					'data-cf-beacon': '{"token": "3e50e7fba57343d693926bf5bd906590"}'
+				});
+
+				// Google AdSense
+				add(
+					'https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-6112301907073111',
+					{ crossorigin: 'anonymous' }
+				);
+			})();
 		</script>
-		<!-- End Google Analytics -->
-		<!-- Cloudflare Web Analytics -->
-		<script defer src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "3e50e7fba57343d693926bf5bd906590"}'></script>
-		<!-- End Cloudflare Web Analytics -->
-		<!-- Google AdSense -->
-		<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-6112301907073111"
-		     crossorigin="anonymous"></script>
-		<!-- End Google AdSense -->
 	</head>
 	<body data-sveltekit-preload-data="hover">
 		<div style="display: contents">%sveltekit.body%</div>
