@@ -33,7 +33,7 @@ excerpt: 이미지가 너무 크게 들어갈 때. 마크다운 기본 문법으
 
 ## GitHub에서도 됩니다
 
-GitHub은 `<img>`의 `width`, `height` 속성을 허용하므로 위 방법이 README·이슈에서 그대로 작동합니다. (단, `style` 속성은 제거되니 크기는 `style`이 아니라 `width`/`height` 속성으로 지정해야 합니다.)
+GitHub은 `<img>`의 `width`, `height` 속성을 허용하므로 위 방법이 [README](/blog/github-readme-guide)·이슈에서 그대로 작동합니다. (단, `style` 속성은 제거되니 크기는 `style`이 아니라 `width`/`height` 속성으로 지정해야 합니다.)
 
 ## 정렬과 함께 쓰기
 

@@ -79,3 +79,18 @@ export function getPost(slug: string): Post | undefined {
 export function getAllSlugs(): string[] {
 	return posts.map((p) => p.slug);
 }
+
+/**
+ * 관련 글. 같은 카테고리를 먼저 채우고, 모자라면 최신순으로 채운다.
+ * (예전에는 최신 글 3편을 그대로 보여줘서 주제와 무관한 글이 붙었다.)
+ */
+export function getRelatedPosts(slug: string, limit = 3): Post[] {
+	const current = getPost(slug);
+	if (!current) return posts.slice(0, limit);
+
+	const others = posts.filter((p) => p.slug !== slug);
+	const sameCategory = others.filter((p) => p.category === current.category);
+	const rest = others.filter((p) => p.category !== current.category);
+
+	return [...sameCategory, ...rest].slice(0, limit);
+}

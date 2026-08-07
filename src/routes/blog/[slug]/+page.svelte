@@ -1,12 +1,12 @@
 <script lang="ts">
 	import { page } from '$app/state';
-	import { getPost, posts } from '$lib/data/posts';
+	import { getPost, getRelatedPosts } from '$lib/data/posts';
 	import { error } from '@sveltejs/kit';
 	import { SITE_URL } from '$lib/config';
 
 	const slug = $derived(page.params.slug ?? '');
 	const post = $derived(getPost(slug));
-	const otherPosts = $derived(posts.filter(p => p.slug !== slug).slice(0, 3));
+	const otherPosts = $derived(getRelatedPosts(slug));
 
 	$effect(() => {
 		if (!post) {
