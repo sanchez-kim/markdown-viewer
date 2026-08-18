@@ -1,3 +1,43 @@
+이 저장소는 두 가지 라이선스를 함께 씁니다.
+This repository is dual-licensed. Scope matters — please read below.
+
+────────────────────────────────────────────────────────────────────────
+1. 소스 코드 — MIT License / Source code — MIT License
+────────────────────────────────────────────────────────────────────────
+
+아래 "MIT License" 전문은 이 저장소의 **소스 코드와 설정 파일**에만 적용됩니다.
+The MIT License below applies to the **source code and configuration files**
+in this repository.
+
+────────────────────────────────────────────────────────────────────────
+2. 블로그 글 — 저작권 보유 / Blog content — All rights reserved
+────────────────────────────────────────────────────────────────────────
+
+`src/lib/posts/` 아래의 마크다운 글(블로그 본문)은 MIT License의 적용 대상이
+**아니며**, 저작권자가 모든 권리를 보유합니다.
+
+The Markdown articles under `src/lib/posts/` are **NOT** covered by the MIT
+License. All rights to that content are reserved by the copyright holder.
+
+- 사전 서면 허락 없이 전문 또는 상당 부분을 복제·재발행·번역·배포할 수 없습니다.
+- 출처를 밝힌 짧은 인용은 저작권법이 허용하는 범위에서 가능합니다.
+- 이용 문의: help@easy-md.com
+
+- You may not reproduce, republish, translate, or redistribute the whole or a
+  substantial part of these articles without prior written permission.
+- Short quotations with attribution are permitted as allowed by copyright law.
+- Licensing inquiries: help@easy-md.com
+
+이 구분을 두는 이유: 코드는 누구나 자유롭게 쓰고 검증할 수 있어야 하지만,
+글까지 MIT로 열어두면 전문을 그대로 복제해 다른 사이트에 재발행하는 것이
+합법이 됩니다. 코드의 개방성은 그대로 두면서 글의 원본성만 지키기 위한 분리입니다.
+
+Why the split: the code should stay free to use and audit, but an MIT grant
+over the articles would make wholesale republication on other sites lawful.
+This keeps the code open while protecting the originality of the writing.
+
+────────────────────────────────────────────────────────────────────────
+
 MIT License
 
 Copyright (c) 2025 Sanchez Kim
