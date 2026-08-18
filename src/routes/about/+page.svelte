@@ -92,7 +92,7 @@
 		<!-- Privacy highlight -->
 		<section class="privacy-section">
 			<div class="privacy-box">
-				<h2>🔒 개인정보 완전 보호</h2>
+				<h2>🔒 작성한 문서는 내 브라우저에만</h2>
 				<div class="privacy-grid">
 					<div class="privacy-item">
 						<span class="check">✓</span>
@@ -111,18 +111,23 @@
 					<div class="privacy-item">
 						<span class="check">✓</span>
 						<div>
-							<strong>개인정보 수집 없음</strong>
-							<p>이메일·이름 등 어떠한 정보도 수집 안 함</p>
+							<strong>회원 정보 미수집</strong>
+							<p>이메일·이름 등 계정 정보를 요구하지 않음</p>
 						</div>
 					</div>
 					<div class="privacy-item">
 						<span class="check">✓</span>
 						<div>
-							<strong>쿠키 없는 분석</strong>
-							<p>Cloudflare Analytics로 익명 통계만 수집</p>
+							<strong>문서 내용은 분석 대상 아님</strong>
+							<p>방문 통계와 광고 목적의 쿠키는 사용하지만, 작성한 문서 내용은 어디에도 전송되지 않음</p>
 						</div>
 					</div>
 				</div>
+				<p class="privacy-note">
+					서비스 운영을 위해 Google Analytics(방문 통계)와 Google AdSense(광고)를 사용하며,
+					이 과정에서 쿠키가 사용됩니다. 수집 항목과 거부 방법은
+					<a href="/privacy">개인정보처리방침</a>에 정리해두었습니다.
+				</p>
 			</div>
 		</section>
 
@@ -169,8 +174,12 @@
 		<!-- Contact -->
 		<section>
 			<h2 class="section-title">📬 문의</h2>
-			<p>버그 제보, 기능 제안, 문의사항은 GitHub Issues로 남겨주세요.</p>
+			<p>
+				문의·제휴·개인정보 관련 요청은 <a href="mailto:help@easy-md.com">help@easy-md.com</a>으로
+				보내주세요. 버그 제보나 기능 제안은 GitHub Issues에 남기시면 진행 상황을 함께 확인할 수 있습니다.
+			</p>
 			<div class="contact-links">
+				<a href="mailto:help@easy-md.com">help@easy-md.com</a>
 				<a href="https://github.com/sanchez-kim/markdown-viewer" target="_blank" rel="noopener">GitHub 저장소</a>
 				<a href="https://github.com/sanchez-kim/markdown-viewer/issues" target="_blank" rel="noopener">버그 제보 / 기능 제안</a>
 			</div>
@@ -363,6 +372,30 @@
 		display: flex;
 		gap: 0.75rem;
 		align-items: flex-start;
+	}
+
+	.privacy-note {
+		margin-top: 1.5rem;
+		padding-top: 1.25rem;
+		border-top: 1px solid rgba(46, 125, 50, 0.2);
+		font-size: 0.9rem;
+		line-height: 1.7;
+		color: #33691e;
+	}
+
+	.privacy-note a {
+		color: #1b5e20;
+		font-weight: 600;
+		text-decoration: underline;
+	}
+
+	:global([data-theme='dark']) .privacy-note {
+		border-top-color: rgba(129, 199, 132, 0.25);
+		color: #a5d6a7;
+	}
+
+	:global([data-theme='dark']) .privacy-note a {
+		color: #c5e1a5;
 	}
 
 	.check {

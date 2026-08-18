@@ -1,9 +1,16 @@
 <script lang="ts">
+	import { onMount } from 'svelte';
 	import { page } from '$app/state';
 	import { SITE_URL, SITE_NAME } from '$lib/config';
 	import { breadcrumbLd, footerLinks } from '$lib/seo';
+	import { themeStore } from '$lib/stores/theme';
 
 	let { children } = $props();
+
+	// 테마 적용은 레이아웃에서 한 번만 한다. 이전에는 페이지마다 각자 themeStore.init()을
+	// 호출했는데 /blog, /blog/[slug], /faq, /compare, /use-cases, /changelog가 빠져 있어서
+	// 저장된 테마도, 시스템 다크 모드도 그 페이지들에는 전혀 적용되지 않았다.
+	onMount(() => themeStore.init());
 
 	const breadcrumb = $derived(breadcrumbLd(page.url.pathname));
 	const mainLinks = footerLinks('main');
@@ -74,12 +81,65 @@
 				<a href={l.path}>{l.name}</a>
 			{/each}
 			<a href="https://github.com/sanchez-kim/markdown-viewer" target="_blank" rel="noopener">GitHub</a>
+			<a href="mailto:help@easy-md.com">문의 help@easy-md.com</a>
 		</nav>
 		<p class="footer-copy">© 2026 이지 마크다운 (EasyMD)</p>
 	</footer>
 {/if}
 
 <style>
+	/*
+		테마 CSS 변수는 레이아웃에서 정의한다. 원래 에디터(+page.svelte) 스타일 블록 안에만
+		있었기 때문에, 에디터를 거치지 않는 /blog·/faq·/compare 등에서는 변수가 정의되지 않아
+		var(--bg-primary, #f5f5f5) 같은 라이트 폴백만 적용됐다. 그 결과 다크 모드에서
+		글자색만 어두운 테마로 바뀌고 배경은 흰색으로 남아 본문이 읽히지 않았다.
+	*/
+	:global(:root) {
+		--bg-primary: #f5f5f5;
+		--bg-secondary: #ffffff;
+		--bg-tertiary: #fefefe;
+		--bg-quaternary: #ecf0f1;
+		--bg-header: #2c3e50;
+		--text-primary: #000000;
+		--text-secondary: #1f2937;
+		--text-tertiary: #7f8c8d;
+		--text-header: #2c3e50;
+		--border-color: #ddd;
+		--border-color-light: #bdc3c7;
+		--code-bg: #f1f2f6;
+		--code-text: #2c3e50;
+		--blockquote-bg: #f8f9fa;
+		--table-header-bg: #f8f9fa;
+		--ad-bg: #f8f9fa;
+	}
+
+	:global(html.dark) {
+		--bg-primary: #1a1a1a;
+		--bg-secondary: #242424;
+		--bg-tertiary: #2a2a2a;
+		--bg-quaternary: #333333;
+		--bg-header: #1a1a1a;
+		--text-primary: #e0e0e0;
+		--text-secondary: #d0d0d0;
+		--text-tertiary: #a0a0a0;
+		--text-header: #e0e0e0;
+		--border-color: #404040;
+		--border-color-light: #505050;
+		--code-bg: #2a2a2a;
+		--code-text: #e0e0e0;
+		--blockquote-bg: #2a2a2a;
+		--table-header-bg: #2a2a2a;
+		--ad-bg: #242424;
+	}
+
+	:global(body) {
+		margin: 0;
+		font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+		background-color: var(--bg-primary);
+		color: var(--text-primary);
+		transition: background-color 0.3s, color 0.3s;
+	}
+
 	.site-footer {
 		margin-top: 3rem;
 		padding: 2rem 1.5rem 2.5rem;

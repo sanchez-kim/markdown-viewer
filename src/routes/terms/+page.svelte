@@ -146,6 +146,7 @@
 			<h2>11. 문의</h2>
 			<p>약관에 대한 문의사항이 있으시면 다음으로 연락주세요:</p>
 			<ul>
+				<li>이메일: <a href="mailto:help@easy-md.com">help@easy-md.com</a></li>
 				<li>GitHub: <a href="https://github.com/sanchez-kim/markdown-viewer" target="_blank" rel="noopener">markdown-viewer 저장소</a></li>
 				<li>Issues: <a href="https://github.com/sanchez-kim/markdown-viewer/issues" target="_blank" rel="noopener">GitHub Issues</a></li>
 			</ul>
