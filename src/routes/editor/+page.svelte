@@ -1190,18 +1190,12 @@
 	<meta name="author" content="Sanchez Kim" />
 
 	<!-- Open Graph / Facebook -->
-	<meta property="og:type" content="website" />
-	<meta property="og:url" content="{SITE_URL}/editor" />
 	<meta property="og:title" content="마크다운 에디터 | EasyMD" />
 	<meta property="og:description" content="실시간 미리보기로 글을 쓰고 PDF·Word·마크다운으로 내보내세요. 자동 저장, 로그인 불필요." />
-	<meta property="og:image" content="{SITE_URL}/og-image.png" />
 
-	<!-- Twitter -->
-	<meta property="twitter:card" content="summary_large_image" />
-	<meta property="twitter:url" content="{SITE_URL}/editor" />
-	<meta property="twitter:title" content="마크다운 에디터 | EasyMD" />
-	<meta property="twitter:description" content="실시간 미리보기로 글을 쓰고 PDF·Word·마크다운으로 내보내세요. 자동 저장, 로그인 불필요." />
-	<meta property="twitter:image" content="{SITE_URL}/og-image.png" />
+	<!-- Twitter — card/image는 +layout.svelte 공통값 사용 -->
+	<meta name="twitter:title" content="마크다운 에디터 | EasyMD" />
+	<meta name="twitter:description" content="실시간 미리보기로 글을 쓰고 PDF·Word·마크다운으로 내보내세요. 자동 저장, 로그인 불필요." />
 
 	<!-- JSON-LD 구조화 데이터 -->
 	{@html `<script type="application/ld+json">${JSON.stringify({
@@ -1645,6 +1639,163 @@
 	</div>
 </div>
 
+<!--
+	에디터 사용 안내. 반드시 .app(100vh flex) '바깥'에 둔다 — 안에 넣으면 에디터를 덮어
+	클릭·입력을 가로챈다(CLAUDE.md 핵심 관례 3). 에디터 자체는 빈 문서로 시작해서
+	크롤러·리더 관점에서 텍스트가 거의 없는 페이지이므로, 실제 사용법을 여기에 싣는다.
+-->
+<section class="editor-guide" aria-labelledby="editor-guide-title">
+	<div class="editor-guide-inner">
+		<h2 id="editor-guide-title">이지 마크다운 에디터 사용법</h2>
+		<p class="editor-guide-lead">
+			위 에디터는 설치도 로그인도 필요 없습니다. 빈 화면에 바로 글을 쓰기 시작하면 되고,
+			입력한 마크다운 기호는 그 자리에서 서식으로 바뀝니다. 문법을 외우고 있지 않아도
+			쓸 수 있도록 만들어져 있습니다. 아래는 알아두면 손이 빨라지는 것들만 정리한 내용입니다.
+		</p>
+
+		<h3>1. 기호를 입력하면 그 자리에서 서식이 됩니다</h3>
+		<p>
+			마크다운 에디터는 보통 "왼쪽에 코드, 오른쪽에 미리보기" 형태지만, 이지 마크다운은
+			입력한 기호가 즉시 서식으로 바뀌는 방식(WYSIWYG)입니다. 아래 기호를 줄 맨 앞에 치고
+			<kbd>Space</kbd>를 누르면 바로 적용됩니다.
+		</p>
+		<div class="guide-table-wrap">
+			<table class="guide-table">
+				<thead>
+					<tr><th>입력</th><th>결과</th></tr>
+				</thead>
+				<tbody>
+					<tr><td><code># </code></td><td>가장 큰 제목(H1). <code>##</code>, <code>###</code>로 단계를 낮춥니다</td></tr>
+					<tr><td><code>- </code> 또는 <code>* </code></td><td>글머리 기호 목록</td></tr>
+					<tr><td><code>1. </code></td><td>번호 목록</td></tr>
+					<tr><td><code>&gt; </code></td><td>인용구</td></tr>
+					<tr><td><code>```</code></td><td>코드 블록. 뒤에 <code>js</code>·<code>python</code>처럼 언어를 붙이면 문법 강조가 켜집니다</td></tr>
+					<tr><td><code>**굵게**</code></td><td>굵은 글씨. <code>*기울임*</code>, <code>~~취소선~~</code>도 같은 방식</td></tr>
+					<tr><td><code>---</code></td><td>구분선</td></tr>
+				</tbody>
+			</table>
+		</div>
+		<p class="guide-tip">
+			이미 써둔 글을 나중에 꾸미고 싶다면, 텍스트를 <strong>드래그해서 선택</strong>하세요.
+			선택한 자리 위로 서식 도구 모음이 떠서 굵게·기울임·밑줄·글자색·형광펜·링크를 바로 누를 수 있습니다.
+		</p>
+
+		<h3>2. 슬래시(/) 명령어 — 문법을 몰라도 넣을 수 있습니다</h3>
+		<p>
+			빈 줄에서 <code>/</code>를 입력하면 블록 메뉴가 열립니다. 이어서 이름 일부를 타이핑하면
+			목록이 좁혀지고, <kbd>↑</kbd> <kbd>↓</kbd>로 고른 뒤 <kbd>Enter</kbd>로 넣습니다.
+			현재 넣을 수 있는 블록은 다음 10가지입니다.
+		</p>
+		<ul class="guide-chips">
+			<li>제목 1</li>
+			<li>제목 2</li>
+			<li>제목 3</li>
+			<li>글머리 기호</li>
+			<li>번호 목록</li>
+			<li>체크리스트</li>
+			<li>코드 블록</li>
+			<li>인용구</li>
+			<li>표 삽입</li>
+			<li>구분선</li>
+		</ul>
+		<p>
+			<strong>표 삽입</strong>을 고르면 격자 선택기가 나타납니다. 마우스를 끌어 원하는 행·열 크기를
+			집으면 첫 줄이 머리글인 표가 만들어집니다. 만들어진 표 안에 커서를 두면 표 전용 도구 모음이
+			자동으로 떠서 행·열을 추가하거나 지울 수 있고, 열 경계선을 잡아끌면 너비가 조절됩니다.
+		</p>
+
+		<h3>3. 이미지는 붙여넣기만 하면 됩니다</h3>
+		<p>
+			스크린샷을 찍어 <kbd>Ctrl</kbd> + <kbd>V</kbd>로 붙여넣거나, 이미지 파일을 에디터 위로
+			끌어다 놓으면 문서 안에 바로 들어갑니다. 이때 이미지는 가로 최대 1280px로 자동 압축됩니다.
+			원본 그대로 넣으면 브라우저 저장 공간을 금방 채우기 때문입니다. 삽입한 이미지는
+			모서리를 끌어 크기를 조절할 수 있습니다.
+		</p>
+		<p class="guide-tip">
+			이미지는 외부 서버에 올라가지 않고 문서 안에 데이터로 함께 저장됩니다.
+			링크가 만료되지 않는 대신, 사진이 많은 문서는 용량이 커진다는 점만 알아두세요.
+		</p>
+
+		<h3>4. 저장은 신경 쓰지 않아도 됩니다</h3>
+		<p>
+			저장 버튼을 누르는 걸 잊어도 괜찮습니다. 이지 마크다운은 두 가지 방식으로 함께 저장합니다.
+		</p>
+		<ul class="guide-list">
+			<li><strong>상시 자동 저장</strong> — 타이핑을 멈추고 약 1.2초가 지나면 현재 내용이 저장됩니다. 헤더의 표시가 "저장 중…"에서 "저장됨"으로 바뀌는 게 이 동작입니다.</li>
+			<li><strong>5분마다 스냅샷</strong> — 5분 간격으로 그 시점의 문서를 버전 이력에 남깁니다. 최대 20개까지 보관되며, 문서 목록의 이력 탭에서 클릭 한 번으로 예전 상태로 되돌릴 수 있습니다.</li>
+		</ul>
+		<p>
+			즉 "실수로 다 지웠는데 되돌리기도 안 먹는" 상황에서도 5분 전 버전은 남아 있습니다.
+			직접 저장 시점을 남기고 싶다면 <kbd>Ctrl</kbd> + <kbd>S</kbd>를 누르세요.
+		</p>
+
+		<h3>5. 내보내기와 공유</h3>
+		<p>
+			상단 <strong>파일</strong> 메뉴에서 완성한 문서를 밖으로 꺼낼 수 있습니다.
+		</p>
+		<ul class="guide-list">
+			<li><strong>마크다운(.md)</strong> — 원문 그대로. GitHub, Obsidian, 다른 에디터로 그대로 옮겨집니다.</li>
+			<li><strong>PDF</strong> — 브라우저 인쇄 창이 열리고, 대상에서 "PDF로 저장"을 고르면 됩니다.</li>
+			<li><strong>Word(.docx)</strong> — 제목·목록·표 서식을 유지한 채 워드 파일로 저장합니다. 보고서 제출처럼 워드를 요구하는 경우에 씁니다.</li>
+			<li><strong>공유 링크 복사</strong> — 문서 내용을 압축해 URL 자체에 담습니다. 서버에 아무것도 올라가지 않고, 링크를 받은 사람이 열면 그 내용이 복원됩니다. 다만 내용이 길수록 링크도 길어집니다.</li>
+		</ul>
+
+		<h3>6. 작성한 글은 어디에 저장되나요?</h3>
+		<p>
+			이지 마크다운에는 문서를 받아두는 서버가 없습니다. 작성한 내용은 지금 쓰고 있는 브라우저의
+			저장 공간(localStorage)에만 기록되며, 네트워크로 전송되지 않습니다. 회원가입을 받지 않는
+			이유도 같습니다 — 저장할 계정이 필요 없기 때문입니다.
+		</p>
+		<p>
+			대신 그만큼 주의할 점이 있습니다. <strong>브라우저 데이터를 지우면 문서도 함께 사라집니다.</strong>
+			시크릿 모드에서 쓴 내용은 창을 닫는 순간 없어지고, 다른 기기에서는 같은 문서가 보이지 않습니다.
+			오래 보관해야 할 글이라면 마크다운 파일로 한 번 내보내 두는 편이 안전합니다.
+			공용 컴퓨터에서 작업했다면 문서 목록에서 삭제하고 나가는 것을 권합니다.
+		</p>
+
+		<h3>알아두면 좋은 단축키</h3>
+		<div class="guide-table-wrap">
+			<table class="guide-table">
+				<thead>
+					<tr><th>단축키</th><th>동작</th></tr>
+				</thead>
+				<tbody>
+					<tr><td><kbd>Ctrl</kbd> + <kbd>S</kbd></td><td>지금 시점으로 저장</td></tr>
+					<tr><td><kbd>Ctrl</kbd> + <kbd>O</kbd></td><td>내 컴퓨터의 <code>.md</code> 파일 열기</td></tr>
+					<tr><td><kbd>Ctrl</kbd> + <kbd>V</kbd></td><td>클립보드의 이미지 붙여넣기</td></tr>
+					<tr><td><kbd>?</kbd></td><td>단축키 안내 열기 / 닫기</td></tr>
+					<tr><td><kbd>Esc</kbd></td><td>열려 있는 창 닫기 · 변경 취소</td></tr>
+				</tbody>
+			</table>
+		</div>
+		<p class="guide-tip">
+			화면이 좁게 느껴진다면 상단의 <strong>문서 너비</strong>를 눌러보세요. 기본 → 넓게 → 전체 폭
+			순서로 바뀝니다. 긴 표를 다룰 때 유용합니다. 눈이 피로하면 <strong>테마</strong>에서
+			다크 모드로 바꿀 수 있고, 시스템 설정을 따라가게 둘 수도 있습니다.
+		</p>
+
+		<h3>여러 문서를 동시에 쓰고 싶다면</h3>
+		<p>
+			상단 <strong>문서 목록</strong>을 열면 지금까지 작성한 문서가 모두 나옵니다. 제목과 마지막
+			수정 시각, 앞부분 미리보기가 함께 보여서 찾기 쉽습니다. 새 문서를 만들고 오가며 작업해도
+			각 문서는 따로 저장되고 버전 이력도 문서별로 관리됩니다. 문서 이름은 헤더의 파일명을
+			클릭해 바꾼 뒤 <kbd>Enter</kbd>로 확정합니다.
+		</p>
+
+		<nav class="guide-more" aria-label="더 알아보기">
+			<h3>마크다운 문법이 더 궁금하다면</h3>
+			<ul>
+				<li><a href="/guide">마크다운 문법 가이드</a> — 제목·목록·표·링크까지 한 번에 훑기</li>
+				<li><a href="/templates">템플릿 모음</a> — README, 회의록, 기획서 양식을 복사해서 바로 사용</li>
+				<li><a href="/blog/markdown-table-guide">표 만드는 법</a> — 정렬과 셀 병합이 안 되는 이유</li>
+				<li><a href="/blog/markdown-code-highlight-guide">코드 블록 문법 강조</a> — 언어 이름을 붙이는 규칙</li>
+				<li><a href="/blog/github-readme-guide">GitHub README 작성법</a> — 배지, 접기, 이미지 정렬</li>
+				<li><a href="/shortcuts">단축키 전체 목록</a></li>
+				<li><a href="/faq">자주 묻는 질문</a></li>
+			</ul>
+		</nav>
+	</div>
+</section>
 
 	<!-- Legal Footer -->
 	<footer class="legal-footer">
@@ -1669,51 +1820,8 @@
 	</footer>
 
 <style>
-	:global(:root) {
-		--bg-primary: #f5f5f5;
-		--bg-secondary: #ffffff;
-		--bg-tertiary: #fefefe;
-		--bg-quaternary: #ecf0f1;
-		--bg-header: #2c3e50;
-		--text-primary: #000000;
-		--text-secondary: #1f2937;
-		--text-tertiary: #7f8c8d;
-		--text-header: #2c3e50;
-		--border-color: #ddd;
-		--border-color-light: #bdc3c7;
-		--code-bg: #f1f2f6;
-		--code-text: #2c3e50;
-		--blockquote-bg: #f8f9fa;
-		--table-header-bg: #f8f9fa;
-		--ad-bg: #f8f9fa;
-	}
-
-	:global(html.dark) {
-		--bg-primary: #1a1a1a;
-		--bg-secondary: #242424;
-		--bg-tertiary: #2a2a2a;
-		--bg-quaternary: #333333;
-		--bg-header: #1a1a1a;
-		--text-primary: #e0e0e0;
-		--text-secondary: #d0d0d0;
-		--text-tertiary: #a0a0a0;
-		--text-header: #e0e0e0;
-		--border-color: #404040;
-		--border-color-light: #505050;
-		--code-bg: #2a2a2a;
-		--code-text: #e0e0e0;
-		--blockquote-bg: #2a2a2a;
-		--table-header-bg: #2a2a2a;
-		--ad-bg: #242424;
-	}
-
-	:global(body) {
-		margin: 0;
-		font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-		background-color: var(--bg-primary);
-		color: var(--text-primary);
-		transition: background-color 0.3s, color 0.3s;
-	}
+	/* 테마 CSS 변수(:root / html.dark)와 body 기본 스타일은 +layout.svelte로 옮겼다.
+	   여기에만 두면 에디터를 거치지 않는 페이지에서 변수가 정의되지 않는다. */
 
 	.app {
 		height: 100vh;
@@ -2239,6 +2347,236 @@
 	}
 
 	/* Legal Footer */
+	/* --- 에디터 하단 사용 안내 (.app 바깥) --- */
+	.editor-guide {
+		background: #f7f8fb;
+		border-top: 1px solid #e5e7eb;
+		padding: 3.5rem 1.5rem 4rem;
+		color: #313a4b;
+		line-height: 1.8;
+	}
+
+	.editor-guide-inner {
+		max-width: 760px;
+		margin: 0 auto;
+	}
+
+	.editor-guide h2 {
+		font-size: 1.6rem;
+		font-weight: 700;
+		color: #1f2430;
+		margin: 0 0 0.75rem;
+		letter-spacing: -0.01em;
+	}
+
+	.editor-guide h3 {
+		font-size: 1.12rem;
+		font-weight: 700;
+		color: #1f2430;
+		margin: 2.5rem 0 0.75rem;
+	}
+
+	.editor-guide-lead {
+		font-size: 1.02rem;
+		color: #4a5364;
+		margin: 0;
+	}
+
+	.editor-guide p {
+		margin: 0 0 0.9rem;
+	}
+
+	.editor-guide strong {
+		color: #1f2430;
+		font-weight: 600;
+	}
+
+	.editor-guide a {
+		color: #5b64d8;
+		text-decoration: underline;
+		text-underline-offset: 2px;
+	}
+
+	.editor-guide a:hover {
+		color: #434bbd;
+	}
+
+	.editor-guide code {
+		background: #eceef4;
+		border-radius: 4px;
+		padding: 0.12em 0.4em;
+		font-size: 0.88em;
+		font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+		color: #b0396b;
+	}
+
+	.editor-guide kbd {
+		display: inline-block;
+		background: #ffffff;
+		border: 1px solid #cfd4de;
+		border-bottom-width: 2px;
+		border-radius: 5px;
+		padding: 0.05em 0.42em;
+		font-size: 0.82em;
+		font-family: inherit;
+		color: #3a4152;
+		white-space: nowrap;
+	}
+
+	.guide-list {
+		margin: 0 0 0.9rem;
+		padding-left: 1.15rem;
+	}
+
+	.guide-list li {
+		margin-bottom: 0.55rem;
+	}
+
+	.guide-chips {
+		list-style: none;
+		display: flex;
+		flex-wrap: wrap;
+		gap: 0.45rem;
+		margin: 0 0 1.1rem;
+		padding: 0;
+	}
+
+	.guide-chips li {
+		background: #ffffff;
+		border: 1px solid #dde1ea;
+		border-radius: 999px;
+		padding: 0.28rem 0.8rem;
+		font-size: 0.88rem;
+		color: #485061;
+	}
+
+	.guide-table-wrap {
+		overflow-x: auto;
+		margin: 0 0 1.1rem;
+	}
+
+	.guide-table {
+		width: 100%;
+		border-collapse: collapse;
+		font-size: 0.93rem;
+		background: #ffffff;
+		border: 1px solid #e2e5ec;
+		border-radius: 8px;
+	}
+
+	.guide-table th,
+	.guide-table td {
+		text-align: left;
+		padding: 0.6rem 0.85rem;
+		border-bottom: 1px solid #edeff4;
+		vertical-align: top;
+	}
+
+	.guide-table th {
+		background: #f2f4f8;
+		font-weight: 600;
+		color: #333c4d;
+		white-space: nowrap;
+	}
+
+	.guide-table tbody tr:last-child td {
+		border-bottom: none;
+	}
+
+	.guide-tip {
+		background: #eef2ff;
+		border-left: 3px solid #8b93e8;
+		border-radius: 0 6px 6px 0;
+		padding: 0.8rem 1rem;
+		font-size: 0.94rem;
+		color: #3c4360;
+	}
+
+	.guide-more {
+		margin-top: 2.75rem;
+		padding-top: 1.75rem;
+		border-top: 1px solid #e3e6ed;
+	}
+
+	.guide-more h3 {
+		margin-top: 0;
+	}
+
+	.guide-more ul {
+		margin: 0;
+		padding-left: 1.15rem;
+	}
+
+	.guide-more li {
+		margin-bottom: 0.4rem;
+	}
+
+	:global(html.dark) .editor-guide {
+		background: #14171f;
+		border-top-color: #262c36;
+		color: #a8b2c1;
+	}
+
+	:global(html.dark) .editor-guide h2,
+	:global(html.dark) .editor-guide h3,
+	:global(html.dark) .editor-guide strong {
+		color: #e6edf3;
+	}
+
+	:global(html.dark) .editor-guide-lead {
+		color: #9aa5b4;
+	}
+
+	:global(html.dark) .editor-guide a {
+		color: #a9b6ff;
+	}
+
+	:global(html.dark) .editor-guide a:hover {
+		color: #c3ccff;
+	}
+
+	:global(html.dark) .editor-guide code {
+		background: #21262d;
+		color: #ff9ab6;
+	}
+
+	:global(html.dark) .editor-guide kbd {
+		background: #1c2128;
+		border-color: #39414d;
+		color: #cbd4e1;
+	}
+
+	:global(html.dark) .guide-chips li {
+		background: #1c2128;
+		border-color: #30363d;
+		color: #b7c0cd;
+	}
+
+	:global(html.dark) .guide-table {
+		background: #1a1e26;
+		border-color: #2a3039;
+	}
+
+	:global(html.dark) .guide-table th {
+		background: #21262d;
+		color: #d3dae3;
+	}
+
+	:global(html.dark) .guide-table th,
+	:global(html.dark) .guide-table td {
+		border-bottom-color: #262c36;
+	}
+
+	:global(html.dark) .guide-tip {
+		background: #1b2036;
+		border-left-color: #5b64b8;
+		color: #b3bcd4;
+	}
+
+	:global(html.dark) .guide-more {
+		border-top-color: #262c36;
+	}
+
 	.legal-footer {
 		background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
 		color: rgba(255,255,255,0.75);
@@ -2889,6 +3227,14 @@
 
 		.status-info {
 			align-items: center;
+		}
+
+		.editor-guide {
+			padding: 2.5rem 1.1rem 3rem;
+		}
+
+		.editor-guide h2 {
+			font-size: 1.35rem;
 		}
 
 		.legal-footer {

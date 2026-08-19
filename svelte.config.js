@@ -12,7 +12,10 @@ const config = {
 		adapter: adapter({
 			pages: 'build',
 			assets: 'build',
-			fallback: '200.html',
+			// 모든 라우트가 prerender되므로 fallback은 "존재하지 않는 URL" 전용이다.
+			// 200.html로 두면 없는 주소도 HTTP 200 + 빈 셸을 반환해 소프트 404가 된다.
+			// Netlify는 publish 루트의 404.html을 404 상태로 서빙하므로 이 이름이어야 한다.
+			fallback: '404.html',
 			precompress: false,
 			strict: true
 		}),

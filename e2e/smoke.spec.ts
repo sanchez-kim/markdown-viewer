@@ -57,6 +57,44 @@ test('블로그 글이 정상 렌더된다', async ({ page }) => {
 	await expect(page.locator('.post-content')).toContainText('줄바꿈');
 });
 
+// 분석·광고 스크립트가 프로덕션 도메인 밖에서 로드되면 GA4에 우리 테스트가
+// 실제 방문자로 잡힌다(실제로 그랬다). localhost에서는 한 건도 나가면 안 된다.
+test('localhost에서는 분석·광고 스크립트를 로드하지 않는다', async ({ page }) => {
+	const thirdParty: string[] = [];
+	page.on('request', (r) => {
+		const url = r.url();
+		if (/googletagmanager|google-analytics|googlesyndication|cloudflareinsights/.test(url)) {
+			thirdParty.push(url);
+		}
+	});
+	await page.goto('/');
+	await page.waitForLoadState('networkidle');
+	expect(thirdParty).toEqual([]);
+});
+
+// JS를 실행하지 않은 원본 HTML을 본다 — 크롤러가 보는 것과 같은 상태.
+// page.goto()는 하이드레이션 후를 보므로 이 회귀를 잡지 못한다.
+// <script>를 걷어내는 것이 핵심: FAQ JSON-LD에도 답변 텍스트가 들어 있어서,
+// 그냥 검사하면 본문에 답변이 없어도 통과해버린다.
+const visibleHtml = (html: string) => html.replace(/<script[\s\S]*?<\/script>/g, '');
+
+test('FAQ 답변이 JS 없이도 본문 HTML에 들어 있다', async ({ request }) => {
+	const html = visibleHtml(await (await request.get('/faq')).text());
+	expect(html).toContain('완전히 무료입니다');
+	expect(html).toContain('localStorage');
+});
+
+test('블로그 글 본문이 JS 없이도 본문 HTML에 들어 있다', async ({ request }) => {
+	const html = visibleHtml(await (await request.get('/blog/markdown-linebreak')).text());
+	expect(html).toContain('줄바꿈');
+});
+
+test('없는 URL은 200이 아니라 404를 반환한다 (소프트 404 회귀 방지)', async ({ page }) => {
+	const res = await page.goto('/this-page-does-not-exist');
+	expect(res?.status()).toBe(404);
+	await expect(page.locator('.error-page')).toBeVisible();
+});
+
 test('콘텐츠 페이지에 통일 브랜드 헤더와 로고가 있다', async ({ page }) => {
 	await page.goto('/guide');
 	const brand = page.locator('.site-header .site-brand');

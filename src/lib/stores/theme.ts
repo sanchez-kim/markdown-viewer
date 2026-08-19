@@ -50,11 +50,19 @@ function applyTheme(theme: Theme) {
 
 	const root = document.documentElement;
 
-	if (theme === 'auto') {
-		const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-		root.classList.toggle('dark', prefersDark);
+	const dark =
+		theme === 'auto' ? window.matchMedia('(prefers-color-scheme: dark)').matches : theme === 'dark';
+
+	root.classList.toggle('dark', dark);
+
+	// 다크 스타일이 두 가지 셀렉터로 나뉘어 작성돼 있다. 에디터·레이아웃·랜딩은 `html.dark`를,
+	// about·blog·blog/[slug]·DocList·TabBar는 `[data-theme='dark']`를 쓴다. 여기서 클래스만
+	// 토글하던 탓에 후자 34개 규칙이 한 번도 적용되지 않았고, 다크 모드에서 헤더·푸터만
+	// 어두워지고 블로그 본문은 흰 배경으로 남는 상태였다. 둘 다 반영한다.
+	if (dark) {
+		root.setAttribute('data-theme', 'dark');
 	} else {
-		root.classList.toggle('dark', theme === 'dark');
+		root.setAttribute('data-theme', 'light');
 	}
 }
 

@@ -66,6 +66,12 @@ npm run test:e2e      # Playwright E2E 스모크 (build+preview 자동 기동)
 
 5. **전체 prerender**(`+layout.js`의 `prerender = true`). 브라우저 전용 API(Tiptap·localStorage·DOMPurify)는 `onMount`/`browser` 가드 안에서만 사용.
 
+6. **canonical·OG 공통 태그는 `+layout.svelte`에서만 선언.** `svelte:head`는 중복 제거를 하지 않아서, 개별 페이지에서 같은 태그를 또 쓰면 HTML에 두 번 나간다. 레이아웃이 담당하는 것: `canonical`, `og:url`, `og:type`(블로그 글만 article), `og:image`, `og:site_name`, `og:locale`, `twitter:card`, `twitter:image`. 개별 페이지는 **`og:title`·`og:description`만** 선언한다.
+
+7. **`svelte.config.js`의 `fallback`은 `404.html`이어야 한다.** `200.html`로 두면 존재하지 않는 URL도 HTTP 200 + 빈 셸을 반환해 검색엔진에 소프트 404가 된다. 모든 라우트가 prerender되므로 fallback은 오탈자 URL 전용이다. (E2E 스모크가 이 회귀를 감시한다.)
+
+8. **한글 조사 앞 볼드 주의.** `**앵커(anchor)**를`처럼 볼드가 **문장부호로 끝나고 바로 한글 조사**가 붙으면 CommonMark 규칙상 볼드가 닫히지 않아 `**`가 화면에 그대로 노출된다. `**앵커(anchor)를**`처럼 조사를 볼드 안에 넣을 것.
+
 ## 블로그 글 추가 방법
 
 `src/lib/posts/<slug>.md` 파일 **하나만 추가**하면 끝. 파일명이 URL slug가 되고, 빌드 시 자동 수집·렌더된다(이스케이프 걱정 없는 진짜 마크다운).
@@ -86,6 +92,7 @@ excerpt: 목록·검색에 노출되는 한 줄 요약
 
 - **category**: 현재 4종 — `문법 가이드` · `빠른 팁` · `플랫폼 활용` · `실전 활용`. 새 분류는 신중히(난립 주의).
 - **date**: `YYYY-MM-DD`. 목록은 최신순 정렬.
+- **updated**(선택): 발행 후 본문을 의미 있게 고쳤을 때만 `YYYY-MM-DD`로 추가. sitemap `lastmod`와 JSON-LD `dateModified`에 반영된다. 없으면 `date`와 동일하게 취급.
 - **readingTime**(선택): 생략 시 본문 길이로 자동 계산.
 - **HTML 예시를 보여줄 때**는 반드시 코드펜스(```) 안에 넣을 것. 펜스 밖의 `<태그>`는 실제로 렌더된다.
 

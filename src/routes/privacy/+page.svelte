@@ -10,6 +10,10 @@
 <svelte:head>
 	<title>개인정보처리방침 - 이지 마크다운 (EasyMD)</title>
 	<meta name="description" content="이지 마크다운(EasyMD)의 개인정보처리방침입니다. 작성한 문서는 서버로 전송되지 않고 브라우저 LocalStorage에만 저장되며, 개인정보를 수집하지 않습니다." />
+
+	<!-- 나머지 OG/트위터 태그는 +layout.svelte 공통값 사용 -->
+	<meta property="og:title" content="개인정보처리방침 - 이지 마크다운 (EasyMD)" />
+	<meta property="og:description" content="작성한 문서는 서버로 전송되지 않고 브라우저 LocalStorage에만 저장되며, 개인정보를 수집하지 않습니다." />
 </svelte:head>
 
 <div class="legal-page">
@@ -155,9 +159,14 @@
 			<h2>9. 연락처</h2>
 			<p>개인정보처리방침에 대한 문의사항이 있으시면 다음으로 연락주세요:</p>
 			<ul>
+				<li>이메일: <a href="mailto:help@easy-md.com">help@easy-md.com</a></li>
 				<li>GitHub: <a href="https://github.com/sanchez-kim" target="_blank" rel="noopener">@sanchez-kim</a></li>
-				<li>이메일: 저장소의 Issues를 통해 문의해주세요</li>
 			</ul>
+			<p>
+				개인정보 열람·삭제 요청도 위 이메일로 접수합니다. 다만 작성하신 문서는 서버에 보관되지
+				않고 브라우저에만 저장되므로, 저희가 삭제해 드릴 수 있는 문서 데이터 자체가 없습니다.
+				문서를 지우려면 브라우저의 사이트 데이터를 삭제하시면 됩니다.
+			</p>
 		</section>
 
 		<div class="back-link">

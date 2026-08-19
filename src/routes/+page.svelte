@@ -26,18 +26,12 @@
 	<meta name="author" content="Sanchez Kim" />
 
 	<!-- Open Graph / Facebook -->
-	<meta property="og:type" content="website" />
-	<meta property="og:url" content="{SITE_URL}/" />
 	<meta property="og:title" content="이지 마크다운 - EasyMD | 무료 실시간 마크다운 에디터" />
 	<meta property="og:description" content="브라우저에서 바로 사용하는 무료 마크다운 에디터. 실시간 미리보기, 자동 저장, PDF 내보내기 지원." />
-	<meta property="og:image" content="{SITE_URL}/og-image.png" />
 
-	<!-- Twitter -->
-	<meta property="twitter:card" content="summary_large_image" />
-	<meta property="twitter:url" content="{SITE_URL}/" />
-	<meta property="twitter:title" content="이지 마크다운 - EasyMD | 무료 실시간 마크다운 에디터" />
-	<meta property="twitter:description" content="브라우저에서 바로 사용하는 무료 마크다운 에디터. 실시간 미리보기, 자동 저장, PDF 내보내기 지원." />
-	<meta property="twitter:image" content="{SITE_URL}/og-image.png" />
+	<!-- Twitter — card/image는 +layout.svelte 공통값 사용 -->
+	<meta name="twitter:title" content="이지 마크다운 - EasyMD | 무료 실시간 마크다운 에디터" />
+	<meta name="twitter:description" content="브라우저에서 바로 사용하는 무료 마크다운 에디터. 실시간 미리보기, 자동 저장, PDF 내보내기 지원." />
 
 	<!-- JSON-LD 구조화 데이터 -->
 	{@html `<script type="application/ld+json">${JSON.stringify({
@@ -142,6 +136,8 @@
 			<a href="/guide">가이드</a>
 			<span class="sep">|</span>
 			<a href="/blog">블로그</a>
+			<span class="sep">|</span>
+			<a href="/changelog">업데이트 내역</a>
 			<span class="sep">|</span>
 			<a href="/privacy">개인정보처리방침</a>
 			<span class="sep">|</span>
