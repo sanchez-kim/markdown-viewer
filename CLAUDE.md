@@ -72,6 +72,24 @@ npm run test:e2e      # Playwright E2E 스모크 (build+preview 자동 기동)
 
 8. **한글 조사 앞 볼드 주의.** `**앵커(anchor)**를`처럼 볼드가 **문장부호로 끝나고 바로 한글 조사**가 붙으면 CommonMark 규칙상 볼드가 닫히지 않아 `**`가 화면에 그대로 노출된다. `**앵커(anchor)를**`처럼 조사를 볼드 안에 넣을 것.
 
+   빌드 후 아래로 검사할 수 있다. 코드블록 안의 `**`는 의도된 예시이므로 제외해야 한다.
+
+   ```bash
+   npm run build && python3 -c "
+   import re,html,glob,os
+   for f in sorted(glob.glob('build/blog/*.html')):
+       s=open(f,encoding='utf-8').read()
+       m=re.search(r'(?s)<article.*?</article>', s); seg=m.group(0) if m else s
+       seg=re.sub(r'(?is)<(script|style|pre|code)[^>]*>.*?</\1>',' ',seg)
+       body=html.unescape(re.sub(r'(?s)<[^>]+>',' ',seg))
+       if '**' in body: print('볼드 미닫힘:', os.path.basename(f))
+   "
+   ```
+
+9. **정적 페이지를 고치면 `sitemap.xml/+server.ts`의 `lastmod`도 같이 올릴 것.** 블로그 글은 frontmatter의 `updated`에서 자동으로 오지만, `/editor`·`/faq` 같은 **정적 페이지는 `staticRoutes` 배열에 손으로 적힌 날짜**를 쓴다. 의도적으로 수동인 이유는, 예전에 "가장 최근 블로그 글 날짜"를 모든 정적 페이지에 일괄 적용해 고치지도 않은 페이지가 갱신된 것처럼 보이는 거짓 신호를 보냈기 때문이다.
+
+   그래서 갱신을 잊으면 반대 방향으로 틀린다 — 내용을 크게 바꿔놓고도 검색엔진에는 "안 바뀌었다"고 알리게 되어 재크롤이 늦어진다. 실제로 `/editor`를 160자에서 3,031자로 바꾸고도 `lastmod`가 한 달 반 전으로 남아 있던 적이 있다.
+
 ## 블로그 글 추가 방법
 
 `src/lib/posts/<slug>.md` 파일 **하나만 추가**하면 끝. 파일명이 URL slug가 되고, 빌드 시 자동 수집·렌더된다(이스케이프 걱정 없는 진짜 마크다운).
