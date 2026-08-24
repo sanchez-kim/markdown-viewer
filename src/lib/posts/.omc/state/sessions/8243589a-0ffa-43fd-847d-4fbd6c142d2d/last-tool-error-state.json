@@ -1,7 +1,0 @@
-{
-  "tool_name": "Bash",
-  "tool_input_preview": "{\"command\":\"python3 - <<'EOF'\\nimport re\\nraw=open('src/lib/posts/markdown-toc.md',encoding='utf-8').read()\\nbody=raw.split('---',2)[2]\\nprint(\\\"'표' 등장:\\\", body.count('표'), \\\"| '노션':\\\", body.count('노션...",
-  "error": "Exit code 1\nTraceback (most recent call last):\n  File \"<stdin>\", line 2, in <module>\nFileNotFoundError: [Errno 2] No such file or directory: 'src/lib/posts/markdown-toc.md'",
-  "timestamp": "2026-08-07T00:45:59.090Z",
-  "retry_count": 1
-}

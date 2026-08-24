@@ -40,3 +40,7 @@ src-tauri/
 
 # 로컬 전용 설계/전략 문서 (커밋 안 함)
 /ROADMAP.md
+
+# oh-my-claudecode 운영 상태 (커밋 대상 아님)
+# 실제로 src/lib/posts/.omc/state/sessions/*.json 두 개가 커밋돼 있었다.
+.omc/

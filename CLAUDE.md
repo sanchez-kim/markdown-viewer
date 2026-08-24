@@ -100,7 +100,7 @@ npm run test:e2e      # Playwright E2E 스모크 (build+preview 자동 기동)
        f = 'src/routes/+page.svelte' if path=='/' else f'src/routes{path}/+page.svelte'
        real = subprocess.run(['git','log','-1','--format=%cd','--date=short','--',f],
                              capture_output=True, text=True).stdout.strip()
-       flag = '' if lastmod >= real else '   <- sitemap이 더 오래됨'
+       flag = '   <- git 이력 없음(신규?)' if not real else ('' if lastmod >= real else '   <- sitemap이 더 오래됨')
        print(f"{path:<12} 파일 {real}   sitemap {lastmod}{flag}")
    EOF
    ```
