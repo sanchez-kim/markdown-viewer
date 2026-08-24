@@ -8,11 +8,15 @@ export const prerender = true;
 // lastmod는 그 페이지를 마지막으로 의미 있게 고친 날짜다. 페이지 내용을 수정하면
 // 이 값도 함께 갱신할 것. (전에는 "가장 최근 블로그 글 날짜"를 모든 정적 페이지에
 // 일괄로 넣어, 고치지도 않은 페이지가 매번 갱신된 것처럼 보이는 거짓 신호를 보냈다.)
+//
+// 판단 기준은 "렌더되는 내용이 바뀌었는가"다. /templates·/shortcuts·/changelog는
+// 2026-08-05에 파일이 바뀌었지만 레이아웃과 중복되던 og:url·og:type 태그를 지운 것뿐이라
+// 본문이 동일하다. 이런 건 올리지 않는다 — 올리면 그게 바로 위에서 말한 거짓 신호다.
 const staticRoutes: { path: string; lastmod: string; changefreq: string; priority: string }[] = [
-	{ path: '/', lastmod: '2026-06-09', changefreq: 'weekly', priority: '1.0' },
+	{ path: '/', lastmod: '2026-08-06', changefreq: 'weekly', priority: '1.0' },
 	{ path: '/editor', lastmod: '2026-08-18', changefreq: 'monthly', priority: '0.9' },
 	{ path: '/blog', lastmod: '2026-08-24', changefreq: 'weekly', priority: '0.9' },
-	{ path: '/guide', lastmod: '2026-06-08', changefreq: 'monthly', priority: '0.8' },
+	{ path: '/guide', lastmod: '2026-08-06', changefreq: 'monthly', priority: '0.8' },
 	{ path: '/templates', lastmod: '2026-06-09', changefreq: 'monthly', priority: '0.8' },
 	{ path: '/use-cases', lastmod: '2026-08-18', changefreq: 'monthly', priority: '0.8' },
 	{ path: '/compare', lastmod: '2026-08-18', changefreq: 'monthly', priority: '0.8' },

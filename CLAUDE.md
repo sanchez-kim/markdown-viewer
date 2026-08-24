@@ -90,6 +90,21 @@ npm run test:e2e      # Playwright E2E 스모크 (build+preview 자동 기동)
 
    그래서 갱신을 잊으면 반대 방향으로 틀린다 — 내용을 크게 바꿔놓고도 검색엔진에는 "안 바뀌었다"고 알리게 되어 재크롤이 늦어진다. 실제로 `/editor`를 160자에서 3,031자로 바꾸고도 `lastmod`가 한 달 반 전으로 남아 있던 적이 있다.
 
+   판단 기준은 **"렌더되는 내용이 바뀌었는가"**다. 레이아웃과 중복되던 메타 태그를 지우는 것처럼 본문이 그대로인 변경은 올리지 않는다. 아래로 파일 최종 수정일과 대조할 수 있다(둘이 달라도 위 기준에 따라 의도적으로 유지하는 경우가 있으니 기계적으로 맞추지 말 것).
+
+   ```bash
+   python3 - <<'EOF'
+   import re, subprocess
+   sm = dict(re.findall(r"path: '(/[a-z-]*)', lastmod: '([0-9-]+)'", open('src/routes/sitemap.xml/+server.ts').read()))
+   for path, lastmod in sm.items():
+       f = 'src/routes/+page.svelte' if path=='/' else f'src/routes{path}/+page.svelte'
+       real = subprocess.run(['git','log','-1','--format=%cd','--date=short','--',f],
+                             capture_output=True, text=True).stdout.strip()
+       flag = '' if lastmod >= real else '   <- sitemap이 더 오래됨'
+       print(f"{path:<12} 파일 {real}   sitemap {lastmod}{flag}")
+   EOF
+   ```
+
 ## 블로그 글 추가 방법
 
 `src/lib/posts/<slug>.md` 파일 **하나만 추가**하면 끝. 파일명이 URL slug가 되고, 빌드 시 자동 수집·렌더된다(이스케이프 걱정 없는 진짜 마크다운).
