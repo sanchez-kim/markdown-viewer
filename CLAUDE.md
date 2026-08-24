@@ -109,6 +109,7 @@ excerpt: 목록·검색에 노출되는 한 줄 요약
 ```
 
 - **category**: 현재 4종 — `문법 가이드` · `빠른 팁` · `플랫폼 활용` · `실전 활용`. 새 분류는 신중히(난립 주의).
+- **excerpt**: **마크다운 기호로 시작하면 안 된다.** frontmatter 파서(`posts.ts`의 `parseFrontmatter`)는 실제 YAML 파싱이 아니라 콜론 뒤 텍스트를 그대로 문자열로 쓴다. 그래서 `excerpt: > 기호 하나로...`처럼 쓰면 `>`가 **검색 결과 스니펫과 목록에 글자 그대로 노출**된다(`meta description`·`og:description`·JSON-LD `description`에 그대로 들어감). 실제로 두 글에서 `> `와 `- [ ] `가 노출되고 있었다. 설명하려는 기호는 말로 풀어 쓸 것 — `대괄호 두 개로 만드는 체크박스`처럼.
 - **date**: `YYYY-MM-DD`. 목록은 최신순 정렬.
 - **updated**(선택): 발행 후 본문을 의미 있게 고쳤을 때만 `YYYY-MM-DD`로 추가. sitemap `lastmod`와 JSON-LD `dateModified`에 반영된다. 없으면 `date`와 동일하게 취급.
 - **readingTime**(선택): 생략 시 본문 길이로 자동 계산.
