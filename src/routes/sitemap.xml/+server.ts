@@ -11,7 +11,7 @@ export const prerender = true;
 const staticRoutes: { path: string; lastmod: string; changefreq: string; priority: string }[] = [
 	{ path: '/', lastmod: '2026-06-09', changefreq: 'weekly', priority: '1.0' },
 	{ path: '/editor', lastmod: '2026-08-18', changefreq: 'monthly', priority: '0.9' },
-	{ path: '/blog', lastmod: '2026-08-18', changefreq: 'weekly', priority: '0.9' },
+	{ path: '/blog', lastmod: '2026-08-24', changefreq: 'weekly', priority: '0.9' },
 	{ path: '/guide', lastmod: '2026-06-08', changefreq: 'monthly', priority: '0.8' },
 	{ path: '/templates', lastmod: '2026-06-09', changefreq: 'monthly', priority: '0.8' },
 	{ path: '/use-cases', lastmod: '2026-08-18', changefreq: 'monthly', priority: '0.8' },

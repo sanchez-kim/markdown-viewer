@@ -2,8 +2,7 @@
 title: 마크다운 글자 색 바꾸는 법
 category: 빠른 팁
 date: 2026-06-03
-updated: 2026-08-20
-readingTime: 6
+updated: 2026-08-24
 excerpt: 마크다운에는 글자 색 문법이 없습니다. HTML로 넣는 법과, GitHub에서 안 되는 이유, 그리고 색을 쓰기 전에 생각해볼 것까지 정리했습니다.
 ---
 
