@@ -72,6 +72,39 @@ npm run test:e2e      # Playwright E2E 스모크 (build+preview 자동 기동)
 
 8. **한글 조사 앞 볼드 주의.** `**앵커(anchor)**를`처럼 볼드가 **문장부호로 끝나고 바로 한글 조사**가 붙으면 CommonMark 규칙상 볼드가 닫히지 않아 `**`가 화면에 그대로 노출된다. `**앵커(anchor)를**`처럼 조사를 볼드 안에 넣을 것.
 
+   빌드 후 아래로 검사할 수 있다. 코드블록 안의 `**`는 의도된 예시이므로 제외해야 한다.
+
+   ```bash
+   npm run build && python3 -c "
+   import re,html,glob,os
+   for f in sorted(glob.glob('build/blog/*.html')):
+       s=open(f,encoding='utf-8').read()
+       m=re.search(r'(?s)<article.*?</article>', s); seg=m.group(0) if m else s
+       seg=re.sub(r'(?is)<(script|style|pre|code)[^>]*>.*?</\1>',' ',seg)
+       body=html.unescape(re.sub(r'(?s)<[^>]+>',' ',seg))
+       if '**' in body: print('볼드 미닫힘:', os.path.basename(f))
+   "
+   ```
+
+9. **정적 페이지를 고치면 `sitemap.xml/+server.ts`의 `lastmod`도 같이 올릴 것.** 블로그 글은 frontmatter의 `updated`에서 자동으로 오지만, `/editor`·`/faq` 같은 **정적 페이지는 `staticRoutes` 배열에 손으로 적힌 날짜**를 쓴다. 의도적으로 수동인 이유는, 예전에 "가장 최근 블로그 글 날짜"를 모든 정적 페이지에 일괄 적용해 고치지도 않은 페이지가 갱신된 것처럼 보이는 거짓 신호를 보냈기 때문이다.
+
+   그래서 갱신을 잊으면 반대 방향으로 틀린다 — 내용을 크게 바꿔놓고도 검색엔진에는 "안 바뀌었다"고 알리게 되어 재크롤이 늦어진다. 실제로 `/editor`를 160자에서 3,031자로 바꾸고도 `lastmod`가 한 달 반 전으로 남아 있던 적이 있다.
+
+   판단 기준은 **"렌더되는 내용이 바뀌었는가"**다. 레이아웃과 중복되던 메타 태그를 지우는 것처럼 본문이 그대로인 변경은 올리지 않는다. 아래로 파일 최종 수정일과 대조할 수 있다(둘이 달라도 위 기준에 따라 의도적으로 유지하는 경우가 있으니 기계적으로 맞추지 말 것).
+
+   ```bash
+   python3 - <<'EOF'
+   import re, subprocess
+   sm = dict(re.findall(r"path: '(/[a-z-]*)', lastmod: '([0-9-]+)'", open('src/routes/sitemap.xml/+server.ts').read()))
+   for path, lastmod in sm.items():
+       f = 'src/routes/+page.svelte' if path=='/' else f'src/routes{path}/+page.svelte'
+       real = subprocess.run(['git','log','-1','--format=%cd','--date=short','--',f],
+                             capture_output=True, text=True).stdout.strip()
+       flag = '   <- git 이력 없음(신규?)' if not real else ('' if lastmod >= real else '   <- sitemap이 더 오래됨')
+       print(f"{path:<12} 파일 {real}   sitemap {lastmod}{flag}")
+   EOF
+   ```
+
 ## 블로그 글 추가 방법
 
 `src/lib/posts/<slug>.md` 파일 **하나만 추가**하면 끝. 파일명이 URL slug가 되고, 빌드 시 자동 수집·렌더된다(이스케이프 걱정 없는 진짜 마크다운).
@@ -91,6 +124,7 @@ excerpt: 목록·검색에 노출되는 한 줄 요약
 ```
 
 - **category**: 현재 4종 — `문법 가이드` · `빠른 팁` · `플랫폼 활용` · `실전 활용`. 새 분류는 신중히(난립 주의).
+- **excerpt**: **마크다운 기호로 시작하면 안 된다.** frontmatter 파서(`posts.ts`의 `parseFrontmatter`)는 실제 YAML 파싱이 아니라 콜론 뒤 텍스트를 그대로 문자열로 쓴다. 그래서 `excerpt: > 기호 하나로...`처럼 쓰면 `>`가 **검색 결과 스니펫과 목록에 글자 그대로 노출**된다(`meta description`·`og:description`·JSON-LD `description`에 그대로 들어감). 실제로 두 글에서 `> `와 `- [ ] `가 노출되고 있었다. 설명하려는 기호는 말로 풀어 쓸 것 — `대괄호 두 개로 만드는 체크박스`처럼.
 - **date**: `YYYY-MM-DD`. 목록은 최신순 정렬.
 - **updated**(선택): 발행 후 본문을 의미 있게 고쳤을 때만 `YYYY-MM-DD`로 추가. sitemap `lastmod`와 JSON-LD `dateModified`에 반영된다. 없으면 `date`와 동일하게 취급.
 - **readingTime**(선택): 생략 시 본문 길이로 자동 계산.
