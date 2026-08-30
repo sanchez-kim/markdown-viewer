@@ -1,7 +1,7 @@
 // 경로별 SEO/내비게이션 메타를 한 곳에서 관리한다.
 // 새 정적 페이지를 추가하면 여기에 한 줄만 더하면 BreadcrumbList와 공용 푸터에 자동 반영된다.
 import { SITE_URL } from './config';
-import { dict, localizePath, stripLocale, type Locale } from './i18n';
+import { availableIn, dict, localizePath, stripLocale, type Locale } from './i18n';
 import type { Dict } from './i18n/ko';
 
 export interface PageMeta {
@@ -31,12 +31,17 @@ export const PAGE_META: Record<string, PageMeta> = {
 
 /**
  * 공용 푸터 링크. 링크 주소는 해당 로케일 경로로 바뀐다.
- * 한국어 전용 페이지(블로그)는 영어 푸터에서 제외한다 — 영어 사용자를
- * 한국어 본문으로 보내면 바로 이탈한다.
+ *
+ * 아직 번역하지 않은 페이지는 내보내지 않는다. 영어 사용자를 한국어 본문으로
+ * 보내면 바로 이탈하고, 애초에 없는 경로를 링크하면 전체 prerender(strict)
+ * 빌드가 실패한다. 영어판을 추가하면 TRANSLATED_PATHS 등록만으로 다시 나타난다.
  */
 export const footerLinks = (group: 'main' | 'legal', locale: Locale) =>
 	Object.entries(PAGE_META)
-		.filter(([, m]) => m.footer === group && !(m.koOnly && locale !== 'ko'))
+		.filter(
+			([path, m]) =>
+				m.footer === group && !(m.koOnly && locale !== 'ko') && availableIn(path, locale)
+		)
 		.map(([path, m]) => ({
 			path: localizePath(path, locale),
 			name: dict(locale).pages[m.nameKey]
