@@ -57,7 +57,7 @@ export function switchLocalePath(pathname: string, target: Locale): string {
  * 블로그(`/blog`, `/blog/*`)는 한국어 전용이라 계획에 없다 — 상품화된 how-to
  * 주제를 영어로 옮겨봐야 포화된 시장에서 중복 콘텐츠만 된다.
  */
-export const TRANSLATED_PATHS = new Set<string>(['/', '/editor', '/privacy', '/terms', '/faq', '/about', '/shortcuts', '/guide', '/changelog', '/compare', '/use-cases']);
+export const TRANSLATED_PATHS = new Set<string>(['/', '/editor', '/privacy', '/terms', '/faq', '/about', '/shortcuts', '/guide', '/changelog', '/compare', '/use-cases', '/templates']);
 
 export function hasTranslation(pathname: string): boolean {
 	return TRANSLATED_PATHS.has(stripLocale(pathname));

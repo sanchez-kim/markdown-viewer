@@ -1079,7 +1079,10 @@
 	onMount(() => {
 		updatePreview();
 
-		// Handle share link
+		// 공유 링크로 들어온 경우. 예전에는 이 분기 끝에서 return 해버려서 아래의
+		// initTiptap()에 도달하지 못했고, 결과적으로 에디터가 초기화되지 않아
+		// 공유 링크를 열면 빈 화면만 나왔다. 문서만 준비해두고 초기화는 공통 경로로 넘긴다.
+		let openedFromShareLink = false;
 		if (isShareLink()) {
 			const shared = decodeShareHash(location.hash);
 			clearShareHash();
@@ -1088,13 +1091,15 @@
 				loadDoc(shared, meta.title, meta.id);
 				showHero = false;
 				toastStore.show(t.editor.toast.sharedOpened, 'info', 5000);
-				tiptapEditor?.commands.setContent(shared);
-				return;
+				openedFromShareLink = true;
 			}
 		}
 
 		// Init doc store (handles migration from legacy keys)
-		const { content, meta } = docStore.init();
+		// 공유 링크로 이미 문서를 만들어 둔 경우에는 다시 불러오지 않는다.
+		const { content, meta } = openedFromShareLink
+			? { content: '', meta: null }
+			: docStore.init();
 		if (meta) {
 			loadDoc(content, meta.title, meta.id);
 			showHero = false;
@@ -1106,7 +1111,7 @@
 					{ label: t.editor.misc.startNewDoc, onClick: newDocument }
 				);
 			}
-		} else {
+		} else if (!openedFromShareLink) {
 			showHero = true;
 		}
 		startAutoSave(); // Start auto-save with 5-minute interval

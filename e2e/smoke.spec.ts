@@ -136,3 +136,35 @@ test('탭으로 여러 문서를 전환할 수 있다', async ({ page }) => {
 	await expect(page.locator('.tab-bar .tab')).toHaveCount(1);
 	await expect(editor).toContainText('문서 B');
 });
+
+test('공유 링크로 열면 에디터가 초기화되고 내용이 복원된다', async ({ page }) => {
+	// 공유 링크 분기가 onMount에서 early return 하는 바람에 initTiptap()에 도달하지 못해,
+	// 공유 링크를 열면 빈 화면만 나오던 회귀가 있었다. 조용히 깨지는 종류라 스모크로 감시한다.
+	// lz-string으로 압축한 "# Shared\n\nhello" 의 인코딩 결과.
+	const hash = 'MQAgygFghgTgpgEwFBInANug9kA';
+
+	await page.goto(`/editor#share=${hash}`);
+	const editor = page.locator('.tiptap-container .ProseMirror');
+	await expect(editor).toBeVisible();
+	await expect(editor).toContainText('Shared');
+
+	// 영어판도 같은 경로를 쓴다
+	await page.goto(`/en/editor#share=${hash}`);
+	await expect(page.locator('.tiptap-container .ProseMirror')).toContainText('Shared');
+});
+
+test('영어판이 lang=en 으로 렌더되고 hreflang이 양방향으로 연결된다', async ({ page }) => {
+	await page.goto('/en');
+	await expect(page.locator('html')).toHaveAttribute('lang', 'en');
+
+	// 한국어 페이지는 lang=ko 를 유지한다
+	await page.goto('/faq');
+	await expect(page.locator('html')).toHaveAttribute('lang', 'ko');
+	const koAlt = page.locator('link[rel="alternate"][hreflang="en"]');
+	await expect(koAlt).toHaveAttribute('href', /\/en\/faq$/);
+
+	// 영어판이 한국어판을 되가리켜야 짝으로 인식된다
+	await page.goto('/en/faq');
+	const enAlt = page.locator('link[rel="alternate"][hreflang="ko"]');
+	await expect(enAlt).toHaveAttribute('href', /easy-md\.com\/faq$/);
+});
