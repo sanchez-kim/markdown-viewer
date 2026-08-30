@@ -4,6 +4,16 @@
 	import { SITE_URL, SITE_NAME } from '$lib/config';
 	import { breadcrumbLd, footerLinks } from '$lib/seo';
 	import { themeStore } from '$lib/stores/theme';
+	import {
+		LOCALE_NAME,
+		OG_LOCALE,
+		dict,
+		hasTranslation,
+		localeFromPath,
+		localizePath,
+		stripLocale,
+		switchLocalePath
+	} from '$lib/i18n';
 
 	let { children } = $props();
 
@@ -12,18 +22,45 @@
 	// 저장된 테마도, 시스템 다크 모드도 그 페이지들에는 전혀 적용되지 않았다.
 	onMount(() => themeStore.init());
 
-	const breadcrumb = $derived(breadcrumbLd(page.url.pathname));
-	const mainLinks = footerLinks('main');
-	const legalLinks = footerLinks('legal');
+	const locale = $derived(localeFromPath(page.url.pathname));
+	const t = $derived(dict(locale));
+
+	const breadcrumb = $derived(breadcrumbLd(page.url.pathname, locale));
+	const mainLinks = $derived(footerLinks('main', locale));
+	const legalLinks = $derived(footerLinks('legal', locale));
 
 	const canonicalUrl = $derived(`${SITE_URL}${page.url.pathname}`);
 
 	// 블로그 글만 article, 나머지는 website
 	const ogType = $derived(page.url.pathname.startsWith('/blog/') ? 'article' : 'website');
 
-	// 자체 헤더가 있는 랜딩(/)·에디터(/editor)를 제외한 모든 페이지에 통일 브랜드 헤더 표시
-	const showBrandHeader = $derived(
-		page.url.pathname !== '/' && page.url.pathname !== '/editor'
+	// 자체 헤더가 있는 랜딩·에디터를 제외한 모든 페이지에 통일 브랜드 헤더 표시.
+	// 로케일 접두사를 뗀 경로로 비교해야 /en 과 /en/editor 도 같이 걸린다.
+	const canonicalPath = $derived(stripLocale(page.url.pathname));
+	const showBrandHeader = $derived(canonicalPath !== '/' && canonicalPath !== '/editor');
+
+	// 언어판이 실제로 있는 페이지에만 hreflang을 건다. 번역하지 않은 블로그에
+	// 걸면 존재하지 않는 대체 문서를 가리키게 된다.
+	const alternates = $derived(
+		hasTranslation(page.url.pathname)
+			? [
+					{ hreflang: 'ko', href: `${SITE_URL}${localizePath(canonicalPath, 'ko')}` },
+					{ hreflang: 'en', href: `${SITE_URL}${localizePath(canonicalPath, 'en')}` },
+					// x-default는 언어가 정해지지 않은 사용자에게 보여줄 판. 영어를 쓴다 —
+					// 한국어를 모르는 방문자가 한국어판으로 떨어지는 것보다 낫다.
+					{ hreflang: 'x-default', href: `${SITE_URL}${localizePath(canonicalPath, 'en')}` }
+				]
+			: []
+	);
+
+	const otherLocale = $derived(locale === 'ko' ? 'en' : 'ko');
+
+	// 언어 전환 링크. 같은 페이지의 번역본이 있으면 그쪽으로, 없으면 그 언어의 홈으로 보낸다.
+	// 없는 경로로 보내면 404가 되고, 전체 prerender라 빌드 자체가 실패한다(strict: true).
+	const switchHref = $derived(
+		hasTranslation(page.url.pathname)
+			? switchLocalePath(page.url.pathname, otherLocale)
+			: localizePath('/', otherLocale)
 	);
 </script>
 
@@ -38,8 +75,13 @@
 		개별 +page.svelte는 og:title / og:description 만 선언한다 —
 		svelte:head는 중복 제거를 하지 않으므로 양쪽에 쓰면 태그가 두 번 나간다.
 	-->
+	<!-- 언어판 상호 참조. 양쪽이 서로를 가리켜야 검색엔진이 짝으로 인식한다. -->
+	{#each alternates as alt (alt.hreflang)}
+		<link rel="alternate" hreflang={alt.hreflang} href={alt.href} />
+	{/each}
+
 	<meta property="og:site_name" content={SITE_NAME} />
-	<meta property="og:locale" content="ko_KR" />
+	<meta property="og:locale" content={OG_LOCALE[locale]} />
 	<meta property="og:url" content={canonicalUrl} />
 	<meta property="og:type" content={ogType} />
 	<meta property="og:image" content={`${SITE_URL}/og-image.png`} />
@@ -54,11 +96,16 @@
 
 {#if showBrandHeader}
 	<header class="site-header">
-		<a href="/" class="site-brand" aria-label="이지 마크다운 홈">
-			<img src="/logo.svg" alt="이지 마크다운 로고" />
-			<span>이지 마크다운</span>
+		<a href={localizePath('/', locale)} class="site-brand" aria-label={t.brand.homeAria}>
+			<img src="/logo.svg" alt={t.brand.logoAlt} />
+			<span>{t.brand.name}</span>
 		</a>
-		<a href="/editor" class="site-cta">에디터 열기 →</a>
+		<div class="site-header-right">
+			<a href={switchHref} class="site-lang" hreflang={otherLocale} aria-label={t.nav.languageAria}>
+				{LOCALE_NAME[otherLocale]}
+			</a>
+			<a href={localizePath('/editor', locale)} class="site-cta">{t.nav.openEditorArrow}</a>
+		</div>
 	</header>
 {/if}
 
@@ -71,19 +118,20 @@
 -->
 {#if showBrandHeader}
 	<footer class="site-footer">
-		<nav class="footer-links" aria-label="사이트 메뉴">
+		<nav class="footer-links" aria-label={t.nav.siteMenuAria}>
 			{#each mainLinks as l (l.path)}
 				<a href={l.path}>{l.name}</a>
 			{/each}
 		</nav>
-		<nav class="footer-links footer-legal" aria-label="정책">
+		<nav class="footer-links footer-legal" aria-label={t.nav.policyAria}>
 			{#each legalLinks as l (l.path)}
 				<a href={l.path}>{l.name}</a>
 			{/each}
 			<a href="https://github.com/sanchez-kim/markdown-viewer" target="_blank" rel="noopener">GitHub</a>
-			<a href="mailto:help@easy-md.com">문의 help@easy-md.com</a>
+			<a href="mailto:help@easy-md.com">{t.footer.contact}</a>
+			<a href={switchHref} hreflang={otherLocale}>{LOCALE_NAME[otherLocale]}</a>
 		</nav>
-		<p class="footer-copy">© 2026 이지 마크다운 (EasyMD)</p>
+		<p class="footer-copy">{t.footer.copyright}</p>
 	</footer>
 {/if}
 
@@ -216,6 +264,28 @@
 		box-sizing: border-box;
 	}
 
+	.site-header-right {
+		display: flex;
+		align-items: center;
+		gap: 0.6rem;
+	}
+
+	.site-lang {
+		color: #5b6376;
+		text-decoration: none;
+		font-weight: 600;
+		font-size: 0.85rem;
+		padding: 0.4rem 0.7rem;
+		border-radius: 6px;
+		white-space: nowrap;
+		transition: background-color 0.15s, color 0.15s;
+	}
+
+	.site-lang:hover {
+		background: #f2f3f7;
+		color: #2f3545;
+	}
+
 	.site-cta {
 		color: #667eea;
 		text-decoration: none;
@@ -238,6 +308,8 @@
 		border-bottom-color: #21262d;
 	}
 	:global(html.dark) .site-brand { color: #e6edf3; }
+	:global(html.dark) .site-lang { color: #8b949e; }
+	:global(html.dark) .site-lang:hover { background: #21262d; color: #e6edf3; }
 	:global(html.dark) .site-cta { color: #a9b6ff; border-color: #39406b; }
 	:global(html.dark) .site-cta:hover { background: #39406b; color: #ffffff; }
 

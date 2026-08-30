@@ -1,5 +1,9 @@
 import { SITE_URL } from '$lib/config';
 import { posts } from '$lib/data/posts';
+import { TRANSLATED_PATHS, localizePath } from '$lib/i18n';
+
+// 영어판을 처음 공개한 날. 개별 페이지가 아니라 언어판 전체가 이때 새로 생겼다.
+const EN_LAUNCH_DATE = '2026-08-30';
 
 export const prerender = true;
 
@@ -42,6 +46,19 @@ export function GET() {
 		urlEntry(`${SITE_URL}${r.path}`, r.lastmod, r.changefreq, r.priority)
 	);
 
+	// 영어판. TRANSLATED_PATHS가 실제 라우트와 일치하므로 여기서 파생시키면
+	// 아직 만들지 않은 경로가 sitemap에 새어 나가지 않는다.
+	const enEntries = staticRoutes
+		.filter((r) => TRANSLATED_PATHS.has(r.path))
+		.map((r) =>
+			urlEntry(
+				`${SITE_URL}${localizePath(r.path, 'en')}`,
+				EN_LAUNCH_DATE,
+				r.changefreq,
+				r.priority
+			)
+		);
+
 	// 글은 frontmatter의 updated(없으면 date)를 lastmod로 사용
 	const postEntries = posts.map((p) =>
 		urlEntry(`${SITE_URL}/blog/${p.slug}`, p.updated, 'monthly', '0.9')
@@ -49,7 +66,7 @@ export function GET() {
 
 	const xml = `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-${[...staticEntries, ...postEntries].join('\n')}
+${[...staticEntries, ...enEntries, ...postEntries].join('\n')}
 </urlset>`;
 
 	return new Response(xml, {

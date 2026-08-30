@@ -1,48 +1,68 @@
 // 경로별 SEO/내비게이션 메타를 한 곳에서 관리한다.
 // 새 정적 페이지를 추가하면 여기에 한 줄만 더하면 BreadcrumbList와 공용 푸터에 자동 반영된다.
 import { SITE_URL } from './config';
+import { dict, localizePath, stripLocale, type Locale } from './i18n';
+import type { Dict } from './i18n/ko';
 
 export interface PageMeta {
-	/** BreadcrumbList의 마지막 항목 이름 */
-	name: string;
+	/** i18n 사전의 pages 키. BreadcrumbList 마지막 항목과 푸터 링크 이름이 된다. */
+	nameKey: keyof Dict['pages'];
 	/** 공용 푸터에 노출할지 (정책 페이지는 별도 그룹) */
 	footer?: 'main' | 'legal';
+	/** 한국어판만 있는 페이지. 영어 푸터에서는 빼고 hreflang도 걸지 않는다. */
+	koOnly?: true;
 }
 
+/** 키는 로케일 접두사를 뗀 정규 경로다. */
 export const PAGE_META: Record<string, PageMeta> = {
-	'/editor': { name: '에디터' },
-	'/blog': { name: '블로그', footer: 'main' },
-	'/guide': { name: '마크다운 문법 가이드', footer: 'main' },
-	'/templates': { name: '템플릿 모음', footer: 'main' },
-	'/use-cases': { name: '활용 사례', footer: 'main' },
-	'/compare': { name: '에디터 비교', footer: 'main' },
-	'/shortcuts': { name: '단축키', footer: 'main' },
-	'/about': { name: '소개', footer: 'main' },
-	'/faq': { name: '자주 묻는 질문', footer: 'main' },
-	'/changelog': { name: '업데이트 내역', footer: 'main' },
-	'/privacy': { name: '개인정보처리방침', footer: 'legal' },
-	'/terms': { name: '이용약관', footer: 'legal' }
+	'/editor': { nameKey: 'editor' },
+	'/blog': { nameKey: 'blog', footer: 'main', koOnly: true },
+	'/guide': { nameKey: 'guide', footer: 'main' },
+	'/templates': { nameKey: 'templates', footer: 'main' },
+	'/use-cases': { nameKey: 'useCases', footer: 'main' },
+	'/compare': { nameKey: 'compare', footer: 'main' },
+	'/shortcuts': { nameKey: 'shortcuts', footer: 'main' },
+	'/about': { nameKey: 'about', footer: 'main' },
+	'/faq': { nameKey: 'faq', footer: 'main' },
+	'/changelog': { nameKey: 'changelog', footer: 'main' },
+	'/privacy': { nameKey: 'privacy', footer: 'legal' },
+	'/terms': { nameKey: 'terms', footer: 'legal' }
 };
 
-export const footerLinks = (group: 'main' | 'legal') =>
+/**
+ * 공용 푸터 링크. 링크 주소는 해당 로케일 경로로 바뀐다.
+ * 한국어 전용 페이지(블로그)는 영어 푸터에서 제외한다 — 영어 사용자를
+ * 한국어 본문으로 보내면 바로 이탈한다.
+ */
+export const footerLinks = (group: 'main' | 'legal', locale: Locale) =>
 	Object.entries(PAGE_META)
-		.filter(([, m]) => m.footer === group)
-		.map(([path, m]) => ({ path, name: m.name }));
+		.filter(([, m]) => m.footer === group && !(m.koOnly && locale !== 'ko'))
+		.map(([path, m]) => ({
+			path: localizePath(path, locale),
+			name: dict(locale).pages[m.nameKey]
+		}));
 
 /**
  * 정적 페이지용 BreadcrumbList JSON-LD 문자열. 해당 없으면 null.
  * 블로그 글(/blog/*)은 글 제목이 필요해서 각 페이지가 직접 만든다 — 여기서 만들면 중복된다.
  */
-export function breadcrumbLd(pathname: string): string | null {
-	const meta = PAGE_META[pathname];
+export function breadcrumbLd(pathname: string, locale: Locale): string | null {
+	const meta = PAGE_META[stripLocale(pathname)];
 	if (!meta) return null;
+
+	const t = dict(locale);
 
 	return JSON.stringify({
 		'@context': 'https://schema.org',
 		'@type': 'BreadcrumbList',
 		itemListElement: [
-			{ '@type': 'ListItem', position: 1, name: '홈', item: SITE_URL },
-			{ '@type': 'ListItem', position: 2, name: meta.name }
+			{
+				'@type': 'ListItem',
+				position: 1,
+				name: t.pages.home,
+				item: `${SITE_URL}${localizePath('/', locale)}`
+			},
+			{ '@type': 'ListItem', position: 2, name: t.pages[meta.nameKey] }
 		]
 	});
 }
