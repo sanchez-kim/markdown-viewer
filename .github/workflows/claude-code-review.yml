@@ -50,5 +50,9 @@ jobs:
           
           # See https://github.com/anthropics/claude-code-action/blob/main/docs/usage.md
           # or https://docs.anthropic.com/en/docs/claude-code/sdk#command-line for available options
-          claude_args: '--allowed-tools "Bash(gh issue view:*),Bash(gh search:*),Bash(gh issue list:*),Bash(gh pr comment:*),Bash(gh pr diff:*),Bash(gh pr view:*),Bash(gh pr list:*)"'
+          # 읽기 도구(Read/Grep/Glob)를 명시적으로 허용한다.
+          # 없으면 리뷰어가 저장소 파일을 열지 못해 diff 밖 맥락을 확인할 수 없다.
+          # PR #11(파일 30개)에서 5턴 동안 55번 권한 거부를 맞고 코멘트도 못 남긴 채
+          # 실패했다. 셋 다 읽기 전용이라 쓰기 위험은 없다.
+          claude_args: '--allowed-tools "Read,Grep,Glob,Bash(gh issue view:*),Bash(gh search:*),Bash(gh issue list:*),Bash(gh pr comment:*),Bash(gh pr diff:*),Bash(gh pr view:*),Bash(gh pr list:*)"'
 
