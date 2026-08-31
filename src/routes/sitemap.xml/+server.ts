@@ -1,5 +1,9 @@
 import { SITE_URL } from '$lib/config';
 import { posts } from '$lib/data/posts';
+import { TRANSLATED_PATHS, localizePath } from '$lib/i18n';
+
+// 영어판을 처음 공개한 날. 개별 페이지가 아니라 언어판 전체가 이때 새로 생겼다.
+const EN_LAUNCH_DATE = '2026-08-30';
 
 export const prerender = true;
 
@@ -12,6 +16,12 @@ export const prerender = true;
 // 판단 기준은 "렌더되는 내용이 바뀌었는가"다. /templates·/shortcuts·/changelog는
 // 2026-08-05에 파일이 바뀌었지만 레이아웃과 중복되던 og:url·og:type 태그를 지운 것뿐이라
 // 본문이 동일하다. 이런 건 올리지 않는다 — 올리면 그게 바로 위에서 말한 거짓 신호다.
+//
+// 같은 기준으로 2026-08-30 영어판 작업에서는 /about·/privacy·/terms 셋만 올렸다.
+// 이 셋은 한국어 본문이 실제로 바뀌었다(about의 자동저장 서술 정정, terms의 3·4.1·7조
+// 재작성, 두 문서의 "최종 업데이트" 표기). 나머지 페이지는 파일이 전부 바뀌었지만
+// 공용 컴포넌트로 옮긴 것이라 렌더되는 한국어 본문이 동일하다. 헤더·푸터에 언어 전환
+// 링크가 하나 붙은 것만으로 전 페이지 lastmod를 올리면 그게 거짓 신호가 된다.
 const staticRoutes: { path: string; lastmod: string; changefreq: string; priority: string }[] = [
 	{ path: '/', lastmod: '2026-08-06', changefreq: 'weekly', priority: '1.0' },
 	{ path: '/editor', lastmod: '2026-08-18', changefreq: 'monthly', priority: '0.9' },
@@ -21,11 +31,11 @@ const staticRoutes: { path: string; lastmod: string; changefreq: string; priorit
 	{ path: '/use-cases', lastmod: '2026-08-18', changefreq: 'monthly', priority: '0.8' },
 	{ path: '/compare', lastmod: '2026-08-18', changefreq: 'monthly', priority: '0.8' },
 	{ path: '/shortcuts', lastmod: '2026-06-09', changefreq: 'monthly', priority: '0.6' },
-	{ path: '/about', lastmod: '2026-08-18', changefreq: 'monthly', priority: '0.6' },
+	{ path: '/about', lastmod: '2026-08-30', changefreq: 'monthly', priority: '0.6' },
 	{ path: '/faq', lastmod: '2026-08-18', changefreq: 'monthly', priority: '0.6' },
 	{ path: '/changelog', lastmod: '2026-06-09', changefreq: 'monthly', priority: '0.6' },
-	{ path: '/privacy', lastmod: '2026-08-18', changefreq: 'yearly', priority: '0.4' },
-	{ path: '/terms', lastmod: '2026-08-18', changefreq: 'yearly', priority: '0.4' }
+	{ path: '/privacy', lastmod: '2026-08-30', changefreq: 'yearly', priority: '0.4' },
+	{ path: '/terms', lastmod: '2026-08-30', changefreq: 'yearly', priority: '0.4' }
 ];
 
 function urlEntry(loc: string, lastmod: string, changefreq: string, priority: string): string {
@@ -42,6 +52,19 @@ export function GET() {
 		urlEntry(`${SITE_URL}${r.path}`, r.lastmod, r.changefreq, r.priority)
 	);
 
+	// 영어판. TRANSLATED_PATHS가 실제 라우트와 일치하므로 여기서 파생시키면
+	// 아직 만들지 않은 경로가 sitemap에 새어 나가지 않는다.
+	const enEntries = staticRoutes
+		.filter((r) => TRANSLATED_PATHS.has(r.path))
+		.map((r) =>
+			urlEntry(
+				`${SITE_URL}${localizePath(r.path, 'en')}`,
+				EN_LAUNCH_DATE,
+				r.changefreq,
+				r.priority
+			)
+		);
+
 	// 글은 frontmatter의 updated(없으면 date)를 lastmod로 사용
 	const postEntries = posts.map((p) =>
 		urlEntry(`${SITE_URL}/blog/${p.slug}`, p.updated, 'monthly', '0.9')
@@ -49,7 +72,7 @@ export function GET() {
 
 	const xml = `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-${[...staticEntries, ...postEntries].join('\n')}
+${[...staticEntries, ...enEntries, ...postEntries].join('\n')}
 </urlset>`;
 
 	return new Response(xml, {
